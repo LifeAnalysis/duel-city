@@ -1,8 +1,5 @@
-import { YGOProStocTypeChange } from "ygopro-msg-encode";
-
 import { ygopro } from "../../idl/ocgcore";
 import { StocAdapter, YgoProPacket } from "../packet";
-import { decodeStoc } from "./decode";
 
 /*
  * STOC TypeChange
@@ -19,11 +16,11 @@ export default class TypeChangeAdapter implements StocAdapter {
   }
 
   upcast(): ygopro.YgoStocMsg {
-    const protocol = decodeStoc(this.packet, YGOProStocTypeChange);
-    const playerPosition = protocol.playerPosition;
+    const type_ = new DataView(this.packet.exData.buffer).getUint8(0);
+    const isHost = ((type_ >> 4) & 0xf) !== 0;
 
     let selfType = ygopro.StocTypeChange.SelfType.UNKNOWN;
-    switch (playerPosition) {
+    switch (type_ & 0xf) {
       case 0: {
         selfType = ygopro.StocTypeChange.SelfType.PLAYER1;
 
@@ -64,7 +61,7 @@ export default class TypeChangeAdapter implements StocAdapter {
     return new ygopro.YgoStocMsg({
       stoc_type_change: new ygopro.StocTypeChange({
         self_type: selfType,
-        is_host: protocol.isHost,
+        is_host: isHost,
       }),
     });
   }

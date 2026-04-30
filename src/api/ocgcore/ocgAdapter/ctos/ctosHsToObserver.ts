@@ -1,8 +1,6 @@
-import { YGOProCtosHsToObserver } from "ygopro-msg-encode";
-
 import { ygopro } from "../../idl/ocgcore";
 import { YgoProPacket } from "../packet";
-import { encodeCtos } from "./encode";
+import { CTOS_HS_TO_OBSERVER } from "../protoDecl";
 
 /*
  * CTOS HsReady
@@ -11,6 +9,6 @@ import { encodeCtos } from "./encode";
  * */
 export default class CtosHsToObserver extends YgoProPacket {
   constructor(_: ygopro.YgoCtosMsg) {
-    super(...encodeCtos(new YGOProCtosHsToObserver()));
+    super(1, CTOS_HS_TO_OBSERVER, new Uint8Array(0));
   }
 }

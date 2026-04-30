@@ -3,8 +3,6 @@
  *
  * */
 
-import { YGOProMessages } from "ygopro-msg-encode";
-
 import { ygopro } from "../../../idl/ocgcore";
 import { StocAdapter, YgoProPacket } from "../../packet";
 import * as GAME_MSG from "../../protoDecl";
@@ -20,7 +18,6 @@ import MsgDrawAdapter from "./draw";
 import MsgFieldDisabledAdapter from "./fieldDisabled";
 import MsgHandResultAdapter from "./handResult";
 import MsgHintAdapter from "./hint";
-import MsgMoveAdapter from "./move";
 import MsgNewPhaseAdapter from "./newPhase";
 import MsgNewTurnAdapter from "./newTurn";
 import PENETRATE from "./penetrate";
@@ -50,16 +47,6 @@ import MsgUpdateDataAdapter from "./updateData";
 import MsgWaitAdapter from "./wait";
 import MsgWin from "./win";
 
-function getGameMsgCommand(exData: Uint8Array): number | undefined {
-  try {
-    const decodedMsg = YGOProMessages.getInstanceFromPayload(exData);
-
-    return decodedMsg?.identifier ?? exData[0];
-  } catch {
-    return exData[0];
-  }
-}
-
 /*
  * STOC GameMsg
  *
@@ -77,16 +64,13 @@ export default class GameMsgAdapter implements StocAdapter {
 
   upcast(): ygopro.YgoStocMsg {
     const exData = this.packet.exData;
+    const dataView = new DataView(exData.buffer);
 
-    const func = getGameMsgCommand(exData);
+    const func = dataView.getUint8(0);
     const gameData = exData.slice(1);
     let gameMsg: any = new ygopro.StocGameMessage({}).toObject();
-    const penetrated =
-      func !== undefined &&
-      func !== GAME_MSG.MSG_MOVE &&
-      PENETRATE.penetrate(func, gameMsg, gameData);
 
-    if (!penetrated) {
+    if (!PENETRATE.penetrate(func, gameMsg, gameData)) {
       switch (func) {
         case GAME_MSG.MSG_START: {
           gameMsg.start = MsgStartAdapter(gameData);
@@ -102,10 +86,6 @@ export default class GameMsgAdapter implements StocAdapter {
         }
         case GAME_MSG.MSG_NEW_PHASE: {
           gameMsg.new_phase = MsgNewPhaseAdapter(gameData);
-          break;
-        }
-        case GAME_MSG.MSG_MOVE: {
-          gameMsg.move = MsgMoveAdapter(gameData);
           break;
         }
         case GAME_MSG.MSG_HINT: {
@@ -273,7 +253,7 @@ export default class GameMsgAdapter implements StocAdapter {
         }
         default: {
           gameMsg.unimplemented = new ygopro.StocGameMessage.MsgUnimplemented({
-            command: func ?? 0,
+            command: func,
           });
           break;
         }

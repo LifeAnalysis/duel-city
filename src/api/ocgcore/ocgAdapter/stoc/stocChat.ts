@@ -1,8 +1,5 @@
-import { YGOProStocChat } from "ygopro-msg-encode";
-
 import { ygopro } from "../../idl/ocgcore";
 import { StocAdapter, YgoProPacket } from "../packet";
-import { decodeStoc } from "./decode";
 
 /*
  * STOC Chat
@@ -20,12 +17,15 @@ export default class ChatAdapter implements StocAdapter {
   }
 
   upcast(): ygopro.YgoStocMsg {
-    const protocol = decodeStoc(this.packet, YGOProStocChat);
+    const player = new DataView(this.packet.exData.buffer).getInt16(0, true);
+
+    const decoder = new TextDecoder("utf-16");
+    const msg = decoder.decode(this.packet.exData.slice(2));
 
     return new ygopro.YgoStocMsg({
       stoc_chat: new ygopro.StocChat({
-        player: protocol.player_type,
-        msg: protocol.msg,
+        player,
+        msg,
       }),
     });
   }

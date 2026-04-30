@@ -1,8 +1,8 @@
-import { YGOProStocDeckCount } from "ygopro-msg-encode";
-
 import { ygopro } from "../../idl/ocgcore";
 import { StocAdapter, YgoProPacket } from "../packet";
-import { decodeStoc } from "./decode";
+
+const LITTLE_ENDIAN = true;
+const INT16_BYTE_OFFSET = 2;
 
 /*
  * STOC DeckCount
@@ -20,15 +20,15 @@ export default class DeckCountAdapter implements StocAdapter {
   }
 
   upcast(): ygopro.YgoStocMsg {
-    const protocol = decodeStoc(this.packet, YGOProStocDeckCount);
     const pb = new ygopro.StocDeckCount({});
 
-    pb.meMain = protocol.player0DeckCount.main;
-    pb.meExtra = protocol.player0DeckCount.extra;
-    pb.meSide = protocol.player0DeckCount.side;
-    pb.opMain = protocol.player1DeckCount.main;
-    pb.opExtra = protocol.player1DeckCount.extra;
-    pb.opSide = protocol.player1DeckCount.side;
+    const dataView = new DataView(this.packet.exData.buffer);
+    pb.meMain = dataView.getInt16(0 * INT16_BYTE_OFFSET, LITTLE_ENDIAN);
+    pb.meExtra = dataView.getInt16(1 * INT16_BYTE_OFFSET, LITTLE_ENDIAN);
+    pb.meSide = dataView.getInt16(2 * INT16_BYTE_OFFSET, LITTLE_ENDIAN);
+    pb.opMain = dataView.getInt16(3 * INT16_BYTE_OFFSET, LITTLE_ENDIAN);
+    pb.opExtra = dataView.getInt16(4 * INT16_BYTE_OFFSET, LITTLE_ENDIAN);
+    pb.opSide = dataView.getInt16(5 * INT16_BYTE_OFFSET, LITTLE_ENDIAN);
 
     return new ygopro.YgoStocMsg({
       stoc_deck_count: pb,

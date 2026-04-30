@@ -1,8 +1,7 @@
-import { YGOProCtosChat } from "ygopro-msg-encode";
-
 import { ygopro } from "../../idl/ocgcore";
 import { YgoProPacket } from "../packet";
-import { encodeCtos } from "./encode";
+import { CTOS_CHAT } from "../protoDecl";
+import { strEncodeUTF16Fixed } from "../util";
 
 /*
  * CTOS Chat
@@ -12,9 +11,9 @@ import { encodeCtos } from "./encode";
  * @usage - TODO*/
 export default class CtosChat extends YgoProPacket {
   constructor(pb: ygopro.YgoCtosMsg) {
-    const protocol = new YGOProCtosChat();
-    protocol.msg = pb.ctos_chat.message;
+    const message = pb.ctos_chat.message;
+    const exData = strEncodeUTF16Fixed(message);
 
-    super(...encodeCtos(protocol));
+    super(exData.length + 1, CTOS_CHAT, exData);
   }
 }

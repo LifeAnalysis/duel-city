@@ -1,8 +1,6 @@
-import { YGOProCtosHsNotReady } from "ygopro-msg-encode";
-
 import { ygopro } from "../../idl/ocgcore";
 import { YgoProPacket } from "../packet";
-import { encodeCtos } from "./encode";
+import { CTOS_HS_NOT_READY } from "../protoDecl";
 
 /*
  * CTOS HsReady
@@ -11,6 +9,6 @@ import { encodeCtos } from "./encode";
  * */
 export default class CtosHsNotReady extends YgoProPacket {
   constructor(_: ygopro.YgoCtosMsg) {
-    super(...encodeCtos(new YGOProCtosHsNotReady()));
+    super(1, CTOS_HS_NOT_READY, new Uint8Array(0));
   }
 }

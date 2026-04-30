@@ -1,8 +1,8 @@
-import { YGOProStocHsPlayerEnter } from "ygopro-msg-encode";
-
 import { ygopro } from "../../idl/ocgcore";
 import { StocAdapter, YgoProPacket } from "../packet";
-import { decodeStoc } from "./decode";
+import { _cutoff_name, UTF16_BUFFER_MAX_LEN } from "../util";
+
+const UINT8_PER_UINT16 = 2;
 
 /*
  * STOC HsPlayerEnter
@@ -20,12 +20,21 @@ export default class HsPlayerEnterAdapter implements StocAdapter {
   }
 
   upcast(): ygopro.YgoStocMsg {
-    const protocol = decodeStoc(this.packet, YGOProStocHsPlayerEnter);
+    const exData = this.packet.exData;
+
+    const decoder = new TextDecoder("utf-16");
+    const name = decoder.decode(
+      _cutoff_name(exData.slice(0, UTF16_BUFFER_MAX_LEN * UINT8_PER_UINT16)),
+    );
+
+    const dataView = new DataView(exData.buffer);
+    const pos =
+      dataView.getUint8(UTF16_BUFFER_MAX_LEN * UINT8_PER_UINT16) & 0x3;
 
     return new ygopro.YgoStocMsg({
       stoc_hs_player_enter: new ygopro.StocHsPlayerEnter({
-        name: protocol.name,
-        pos: protocol.pos & 0x3,
+        name,
+        pos,
       }),
     });
   }

@@ -1,7 +1,7 @@
 import { SearchOutlined } from "@ant-design/icons";
 import { App, Avatar, Button, Divider, Empty, Input } from "antd";
 import classNames from "classnames";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
 import useWebSocket, { ReadyState } from "react-use-websocket";
 import { proxy, useSnapshot } from "valtio";
@@ -28,92 +28,72 @@ export const WatchContent: React.FC = () => {
   const { message } = App.useApp();
   const { watchID } = useSnapshot(watchStore);
   const [query, setQuery] = useState("");
-  const [connectWatchSocket, setConnectWatchSocket] = useState(false);
-  const watchUrl = useMemo(() => {
-    // 暂时只支持竞技匹配的观战，TODO：后面需要加上娱乐匹配的支持
-    const url = new URL(athleticWatchUrl);
-    url.searchParams.set("filter", "started");
-    return url.toString();
-  }, []);
+  // 暂时只支持竞技匹配的观战，TODO：后面需要加上娱乐匹配的支持
+  const url = new URL(athleticWatchUrl);
+  url.searchParams.set("filter", "started");
   const { t: i18n } = useTranslation("WatchContent");
-
-  useEffect(() => {
-    setConnectWatchSocket(true);
-
-    return () => setConnectWatchSocket(false);
-  }, []);
-
-  const { readyState } = useWebSocket(
-    watchUrl,
-    {
-      share: true,
-      retryOnError: true,
-      reconnectAttempts: 5,
-      reconnectInterval: 2000,
-      shouldReconnect: () => true,
-      onOpen: () => console.log("watch websocket opened."),
-      onClose: () => console.log("watch websocket closed."),
-      onMessage: (event) => {
-        const info: Info = JSON.parse(event.data);
-        switch (info.event) {
-          case "init": {
-            //@ts-ignore
-            const rooms: Room[] = info.data;
-            rooms.forEach(
-              (room) =>
-                room.users?.forEach(
-                  async (user) =>
-                    (user.avatar = (await getUserInfo(user.username))?.avatar),
-                ),
-            );
-            setRooms(rooms);
-            break;
-          }
-          case "create": {
-            //@ts-ignore
-            const room: Room = info.data;
-
-            room.users?.forEach(
-              async (user) =>
-                (user.avatar = (await getUserInfo(user.username))?.avatar),
-            );
-            setRooms((prev) => prev.concat(room));
-            break;
-          }
-          case "update": {
-            //@ts-ignore
-            const room: Room = info.data;
-            room.users?.forEach(
-              async (user) =>
-                (user.avatar = (await getUserInfo(user.username))?.avatar),
-            );
-            setRooms((prev) => {
-              const target = prev.find((item) => item.id === room.id);
-              if (target) {
-                Object.assign(target, info.data);
-              }
-              return prev;
-            });
-            break;
-          }
-          case "delete": {
-            //@ts-ignore
-            const id: string = info.data;
-            setRooms((prev) => {
-              prev.splice(
-                prev.findIndex((room) => room.id === id),
-                1,
-              );
-              return prev;
-            });
-            break;
-          }
+  const { readyState } = useWebSocket(url.toString(), {
+    onOpen: () => console.log("watch websocket opened."),
+    onClose: () => console.log("watch websocket closed."),
+    onMessage: (event) => {
+      const info: Info = JSON.parse(event.data);
+      switch (info.event) {
+        case "init": {
+          //@ts-ignore
+          const rooms: Room[] = info.data;
+          rooms.forEach(
+            (room) =>
+              room.users?.forEach(
+                async (user) =>
+                  (user.avatar = (await getUserInfo(user.username))?.avatar),
+              ),
+          );
+          setRooms(rooms);
+          break;
         }
-      },
-      onError: (_e) => message.error("Websocket Error!"),
+        case "create": {
+          //@ts-ignore
+          const room: Room = info.data;
+
+          room.users?.forEach(
+            async (user) =>
+              (user.avatar = (await getUserInfo(user.username))?.avatar),
+          );
+          setRooms((prev) => prev.concat(room));
+          break;
+        }
+        case "update": {
+          //@ts-ignore
+          const room: Room = info.data;
+          room.users?.forEach(
+            async (user) =>
+              (user.avatar = (await getUserInfo(user.username))?.avatar),
+          );
+          setRooms((prev) => {
+            const target = prev.find((item) => item.id === room.id);
+            if (target) {
+              Object.assign(target, info.data);
+            }
+            return prev;
+          });
+          break;
+        }
+        case "delete": {
+          //@ts-ignore
+          const id: string = info.data;
+          setRooms((prev) => {
+            prev.splice(
+              prev.findIndex((room) => room.id === id),
+              1,
+            );
+            return prev;
+          });
+          break;
+        }
+      }
     },
-    connectWatchSocket,
-  );
+    onError: (_e) => message.error("Websocket Error!"),
+  });
 
   return (
     <div className={styles.container}>

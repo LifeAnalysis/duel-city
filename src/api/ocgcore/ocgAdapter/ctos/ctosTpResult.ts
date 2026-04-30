@@ -1,8 +1,6 @@
-import { TurnPlayerResult, YGOProCtosTpResult } from "ygopro-msg-encode";
-
 import { ygopro } from "../../idl/ocgcore";
 import { YgoProPacket } from "../packet";
-import { encodeCtos } from "./encode";
+import { CTOS_TP_RESULT } from "../protoDecl";
 
 /*
  * CTOS CTOS_TP_RESULT
@@ -15,24 +13,27 @@ import { encodeCtos } from "./encode";
 export default class CtosTpResultPacket extends YgoProPacket {
   constructor(pb: ygopro.YgoCtosMsg) {
     const tpResult = pb.ctos_tp_result;
-    const protocol = new YGOProCtosTpResult();
 
-    switch (tpResult.tp) {
+    const tp = tpResult.tp;
+    const exData = new Uint8Array(1);
+    const dataView = new DataView(exData.buffer);
+
+    switch (tp) {
       case ygopro.CtosTpResult.TpType.FIRST: {
-        protocol.res = TurnPlayerResult.FIRST;
+        dataView.setUint8(0, 1);
 
         break;
       }
       case ygopro.CtosTpResult.TpType.SECOND: {
-        protocol.res = TurnPlayerResult.SECOND;
+        dataView.setUint8(0, 0);
 
         break;
       }
       default: {
-        console.log("Unknown TpResult type" + tpResult.tp);
+        console.log("Unknown HandResult type" + tp);
       }
     }
 
-    super(...encodeCtos(protocol));
+    super(exData.length + 1, CTOS_TP_RESULT, exData);
   }
 }

@@ -27,21 +27,17 @@ import { roomStore } from "./roomStore";
 import { sideStore } from "./sideStore";
 
 const { DEV } = useEnv();
-const enableStoreDevtools =
-  DEV &&
-  typeof window !== "undefined" &&
-  "__REDUX_DEVTOOLS_EXTENSION__" in window;
 
-devtools(chatStore, { name: "chat", enabled: enableStoreDevtools });
-devtools(matStore, { name: "mat", enabled: enableStoreDevtools });
-devtools(cardStore, { name: "card", enabled: enableStoreDevtools });
-devtools(placeStore, { name: "place", enabled: enableStoreDevtools });
-devtools(replayStore, { name: "replay", enabled: enableStoreDevtools });
-devtools(accountStore, { name: "account", enabled: enableStoreDevtools });
-devtools(roomStore, { name: "room", enabled: enableStoreDevtools });
-devtools(deckStore, { name: "deck", enabled: enableStoreDevtools });
-devtools(initStore, { name: "init", enabled: enableStoreDevtools });
-devtools(sideStore, { name: "side", enabled: enableStoreDevtools });
+devtools(chatStore, { name: "chat", enabled: DEV });
+devtools(matStore, { name: "mat", enabled: DEV });
+devtools(cardStore, { name: "card", enabled: DEV });
+devtools(placeStore, { name: "place", enabled: DEV });
+devtools(replayStore, { name: "replay", enabled: DEV });
+devtools(accountStore, { name: "account", enabled: DEV });
+devtools(roomStore, { name: "room", enabled: DEV });
+devtools(deckStore, { name: "deck", enabled: DEV });
+devtools(initStore, { name: "init", enabled: DEV });
+devtools(sideStore, { name: "side", enabled: DEV });
 
 // 重置`Store`
 export const resetUniverse = () => {

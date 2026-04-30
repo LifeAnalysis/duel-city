@@ -1,8 +1,6 @@
-import { YGOProCtosTimeConfirm } from "ygopro-msg-encode";
-
 import { ygopro } from "../../idl/ocgcore";
 import { YgoProPacket } from "../packet";
-import { encodeCtos } from "./encode";
+import { CTOS_TIME_CONFIRM } from "../protoDecl";
 
 /*
  * CTOS CTOS_TIME_CONFIRM
@@ -14,6 +12,6 @@ import { encodeCtos } from "./encode";
  * */
 export default class CtosTimeConfirm extends YgoProPacket {
   constructor(_: ygopro.YgoCtosMsg) {
-    super(...encodeCtos(new YGOProCtosTimeConfirm()));
+    super(1, CTOS_TIME_CONFIRM, new Uint8Array(0));
   }
 }

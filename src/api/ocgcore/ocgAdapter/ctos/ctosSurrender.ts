@@ -1,8 +1,6 @@
-import { YGOProCtosSurrender } from "ygopro-msg-encode";
-
 import { ygopro } from "../../idl/ocgcore";
 import { YgoProPacket } from "../packet";
-import { encodeCtos } from "./encode";
+import { CTOS_SURRENDER } from "../protoDecl";
 
 /*
  * CTOS SURRENDER
@@ -14,6 +12,6 @@ import { encodeCtos } from "./encode";
  * */
 export default class CtosSurrender extends YgoProPacket {
   constructor(_: ygopro.YgoCtosMsg) {
-    super(...encodeCtos(new YGOProCtosSurrender()));
+    super(1, CTOS_SURRENDER, new Uint8Array(0));
   }
 }

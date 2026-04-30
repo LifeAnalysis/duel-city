@@ -1,8 +1,6 @@
-import { HandResult, YGOProCtosHandResult } from "ygopro-msg-encode";
-
 import { ygopro } from "../../idl/ocgcore";
 import { YgoProPacket } from "../packet";
-import { encodeCtos } from "./encode";
+import { CTOS_HAND_RESULT } from "../protoDecl";
 
 /*
  * CTOS HandResult
@@ -14,29 +12,32 @@ import { encodeCtos } from "./encode";
 export default class CtosHandResultPacket extends YgoProPacket {
   constructor(pb: ygopro.YgoCtosMsg) {
     const handResult = pb.ctos_hand_result;
-    const protocol = new YGOProCtosHandResult();
 
-    switch (handResult.hand) {
+    const hand = handResult.hand;
+    const exData = new Uint8Array(1);
+    const dataView = new DataView(exData.buffer);
+
+    switch (hand) {
       case ygopro.HandType.SCISSORS: {
-        protocol.res = HandResult.SCISSORS;
+        dataView.setUint8(0, 1);
 
         break;
       }
       case ygopro.HandType.ROCK: {
-        protocol.res = HandResult.ROCK;
+        dataView.setUint8(0, 2);
 
         break;
       }
       case ygopro.HandType.PAPER: {
-        protocol.res = HandResult.PAPER;
+        dataView.setUint8(0, 3);
 
         break;
       }
       default: {
-        console.log("Unknown HandResult type" + handResult.hand);
+        console.log("Unknown HandResult type" + hand);
       }
     }
 
-    super(...encodeCtos(protocol));
+    super(exData.length + 1, CTOS_HAND_RESULT, exData);
   }
 }
