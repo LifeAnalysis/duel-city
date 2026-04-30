@@ -12,11 +12,32 @@ export class YgoProPacket {
   packetLen: number; // 数据包长度
   proto: number; // ygopro协议标识
   exData: Uint8Array; // 数据包内容
+  private fullPayload?: Uint8Array;
 
-  constructor(packetLen: number, proto: number, exData: Uint8Array) {
+  constructor(
+    packetLen: number,
+    proto: number,
+    exData: Uint8Array,
+    fullPayload?: Uint8Array,
+  ) {
     this.packetLen = packetLen;
     this.proto = proto;
     this.exData = exData;
+    this.fullPayload = fullPayload;
+  }
+
+  static fromFullPayload(fullPayload: Uint8Array): YgoProPacket {
+    const payload = fullPayload.slice();
+    const dataView = new DataView(
+      payload.buffer,
+      payload.byteOffset,
+      payload.byteLength,
+    );
+    const packetLen = dataView.getUint16(0, littleEndian);
+    const proto = dataView.getUint8(2);
+    const exData = payload.slice(3, packetLen + 2);
+
+    return new YgoProPacket(packetLen, proto, exData, payload);
   }
 
   /*
@@ -25,6 +46,10 @@ export class YgoProPacket {
    *
    * */
   serialize(): Uint8Array {
+    if (this.fullPayload) {
+      return this.fullPayload.slice();
+    }
+
     const array = new Uint8Array(this.packetLen + 2);
     const dataView = new DataView(array.buffer);
 

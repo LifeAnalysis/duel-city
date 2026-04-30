@@ -1,7 +1,8 @@
-import { BufferReader } from "@/infra";
+import { YGOProStocTimeLimit } from "ygopro-msg-encode";
 
 import { ygopro } from "../../idl/ocgcore";
 import { StocAdapter, YgoProPacket } from "../packet";
+import { decodeStoc } from "./decode";
 
 /*
  * STOC TimeLimit
@@ -17,16 +18,12 @@ export default class TimeLimit implements StocAdapter {
   }
 
   upcast(): ygopro.YgoStocMsg {
-    const reader = new BufferReader(this.packet.exData);
-
-    const player = reader.readInt8();
-    const _ = reader.readUint8(); // padding byte
-    const leftTime = reader.readUint16();
+    const protocol = decodeStoc(this.packet, YGOProStocTimeLimit);
 
     return new ygopro.YgoStocMsg({
       stoc_time_limit: new ygopro.StocTimeLimit({
-        player,
-        left_time: leftTime,
+        player: protocol.player,
+        left_time: protocol.left_time,
       }),
     });
   }

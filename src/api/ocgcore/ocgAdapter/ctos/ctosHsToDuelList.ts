@@ -1,6 +1,8 @@
+import { YGOProCtosHsToDuelist } from "ygopro-msg-encode";
+
 import { ygopro } from "../../idl/ocgcore";
 import { YgoProPacket } from "../packet";
-import { CTOS_HS_TO_DUEL_LIST } from "../protoDecl";
+import { encodeCtos } from "./encode";
 
 /*
  * CTOS HsReady
@@ -9,6 +11,6 @@ import { CTOS_HS_TO_DUEL_LIST } from "../protoDecl";
  * */
 export default class CtosHsToDuelList extends YgoProPacket {
   constructor(_: ygopro.YgoCtosMsg) {
-    super(1, CTOS_HS_TO_DUEL_LIST, new Uint8Array(0));
+    super(...encodeCtos(new YGOProCtosHsToDuelist()));
   }
 }

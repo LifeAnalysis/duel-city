@@ -1,7 +1,8 @@
+import { YGOProCtosPlayerInfo } from "ygopro-msg-encode";
+
 import { ygopro } from "../../idl/ocgcore";
 import { YgoProPacket } from "../packet";
-import { CTOS_PLAYER_INFO } from "../protoDecl";
-import { strEncodeUTF16 } from "../util";
+import { encodeCtos } from "./encode";
 
 /*
  * CTOS PlayerInfo
@@ -12,9 +13,9 @@ import { strEncodeUTF16 } from "../util";
  * */
 export default class CtosPlayerInfoPacket extends YgoProPacket {
   constructor(pb: ygopro.YgoCtosMsg) {
-    const player = pb.ctos_player_info.name;
-    const exData = strEncodeUTF16(player);
+    const protocol = new YGOProCtosPlayerInfo();
+    protocol.name = pb.ctos_player_info.name;
 
-    super(exData.length + 1, CTOS_PLAYER_INFO, exData);
+    super(...encodeCtos(protocol));
   }
 }

@@ -1,6 +1,8 @@
+import { YGOProCtosHsStart } from "ygopro-msg-encode";
+
 import { ygopro } from "../../idl/ocgcore";
 import { YgoProPacket } from "../packet";
-import { CTOS_HS_START } from "../protoDecl";
+import { encodeCtos } from "./encode";
 
 /*
  * CTOS HsStart
@@ -9,6 +11,6 @@ import { CTOS_HS_START } from "../protoDecl";
  * */
 export default class CtosHsStartPacket extends YgoProPacket {
   constructor(_: ygopro.YgoCtosMsg) {
-    super(1, CTOS_HS_START, new Uint8Array(0));
+    super(...encodeCtos(new YGOProCtosHsStart()));
   }
 }

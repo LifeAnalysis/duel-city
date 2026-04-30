@@ -1,6 +1,8 @@
+import { YGOProCtosResponse } from "ygopro-msg-encode";
+
 import { ygopro } from "../../../idl/ocgcore";
 import { YgoProPacket } from "../../packet";
-import { CTOS_RESPONSE } from "../../protoDecl";
+import { encodeCtos } from "../encode";
 import adaptSelectBattleCmdResponse from "./selectBattleCmd";
 import adaptSelectCounterResponse from "./selectCounter";
 import adaptSelectEffectYnResponse from "./selectEffectYn";
@@ -83,6 +85,9 @@ export default class CtosResponsePacket extends YgoProPacket {
       }
     }
 
-    super(extraData.length + 1, CTOS_RESPONSE, extraData);
+    const protocol = new YGOProCtosResponse();
+    protocol.response = extraData;
+
+    super(...encodeCtos(protocol));
   }
 }

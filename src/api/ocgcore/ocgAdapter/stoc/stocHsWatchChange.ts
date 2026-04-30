@@ -1,5 +1,8 @@
+import { YGOProStocHsWatchChange } from "ygopro-msg-encode";
+
 import { ygopro } from "../../idl/ocgcore";
 import { StocAdapter, YgoProPacket } from "../packet";
+import { decodeStoc } from "./decode";
 
 /*
  * STOC HsWatchChange
@@ -16,11 +19,11 @@ export default class HsWatchChangeAdapter implements StocAdapter {
   }
 
   upcast(): ygopro.YgoStocMsg {
-    const count = new DataView(this.packet.exData.buffer).getUint16(0, true);
+    const protocol = decodeStoc(this.packet, YGOProStocHsWatchChange);
 
     return new ygopro.YgoStocMsg({
       stoc_hs_watch_change: new ygopro.StocHsWatchChange({
-        count,
+        count: protocol.watch_count,
       }),
     });
   }

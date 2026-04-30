@@ -1,5 +1,8 @@
+import { YGOProStocHsPlayerChange } from "ygopro-msg-encode";
+
 import { ygopro } from "../../idl/ocgcore";
 import { StocAdapter, YgoProPacket } from "../packet";
+import { decodeStoc } from "./decode";
 
 /*
  * STOC HsPlayerChange
@@ -19,9 +22,9 @@ export default class HsPlayerChangeAdapter implements StocAdapter {
     const pb = new ygopro.StocHsPlayerChange({});
     pb.state = ygopro.StocHsPlayerChange.State.UNKNOWN;
 
-    const Status = new DataView(this.packet.exData.buffer).getUint8(0);
-    const pos = (Status >> 4) & 0xf;
-    const state = Status & 0xf;
+    const protocol = decodeStoc(this.packet, YGOProStocHsPlayerChange);
+    const pos = protocol.playerPosition;
+    const state = protocol.playerState;
 
     pb.pos = pos;
 
