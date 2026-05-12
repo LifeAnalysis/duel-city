@@ -41,6 +41,7 @@ export default async function handleSocketMessage(
 ) {
   // 确保按序执行
   animation = animation.then(() => _handle(container, e, agent));
+  await animation;
 }
 
 // FIXME: 下面的所有`handler`中访问`Store`的时候都应该通过`Container`进行访问
@@ -53,6 +54,11 @@ async function _handle(
 
   for (const packet of packets) {
     const pb = adaptStoc(packet);
+    const isReplayGameMsg = replayStore.isReplay && pb.msg === "stoc_game_msg";
+
+    if (isReplayGameMsg) {
+      await replayStore.waitForAdvance();
+    }
 
     switch (pb.msg) {
       case "stoc_join_game": {
@@ -133,6 +139,10 @@ async function _handle(
 
         break;
       }
+    }
+
+    if (isReplayGameMsg) {
+      replayStore.markAdvanced();
     }
   }
 }

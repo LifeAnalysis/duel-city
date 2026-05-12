@@ -1,5 +1,4 @@
 import { initStrings, initSuperPrerelease } from "@/api";
-import { useConfig } from "@/config";
 import { getUIContainer, initUIContainer } from "@/container/compat";
 import { WebSocketStream } from "@/infra";
 import { initReplaySocket, initSocket } from "@/middleware/socket";
@@ -9,8 +8,6 @@ import {
 } from "@/service/executor";
 
 import { initSqlite } from "../Layout/utils";
-
-const NeosConfig = useConfig();
 
 // 连接SRVPRO服务
 export const connectSrvpro = async (params: {
@@ -32,9 +29,8 @@ export const connectSrvpro = async (params: {
   await initSuperPrerelease();
 
   if (params.replay && params.replayData) {
-    // connect to replay Server
+    // initialize replay from local yrp3d data
     const conn = initReplaySocket({
-      url: NeosConfig.replayUrl,
       data: params.replayData,
     });
 
