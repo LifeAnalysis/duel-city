@@ -304,8 +304,28 @@ export const Card: React.FC<{ idx: number }> = React.memo(({ idx }) => {
   };
   // <<< 效果 <<<
 
+  const location = snap.location;
+  const disabled = isCardDisabled(snap as CardType);
+
   return (
     <animated.div
+      data-testid="duel-card"
+      data-card-uuid={snap.uuid}
+      data-card-code={snap.code}
+      data-card-controller={location.controller}
+      data-card-zone={ygopro.CardZone[location.zone]}
+      data-card-zone-value={location.zone}
+      data-card-sequence={location.sequence}
+      data-card-position={ygopro.CardPosition[location.position]}
+      data-card-position-value={location.position}
+      data-card-is-overlay={location.is_overlay}
+      data-card-overlay-sequence={location.overlay_sequence}
+      data-card-is-token={snap.isToken}
+      data-card-status={snap.status}
+      data-card-selectable={snap.selectInfo.selectable}
+      data-card-selected={snap.selectInfo.selected}
+      data-card-targeted={snap.targeted}
+      data-card-disabled={disabled}
       className={classnames(styles["mat-card"], {
         /* 有可操作选项或者已被选中*/
         [styles.glowing]: glowing || snap.selectInfo.selected,
@@ -350,7 +370,7 @@ export const Card: React.FC<{ idx: number }> = React.memo(({ idx }) => {
           <YgoCard
             className={styles.cover}
             code={snap.code === 0 ? snap.meta.id : snap.code}
-            disabled={isCardDisabled(snap as CardType)}
+            disabled={disabled}
           />
           <YgoCard className={styles.back} isBack />
         </div>
