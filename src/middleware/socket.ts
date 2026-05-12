@@ -4,7 +4,8 @@
  * 所有长连接/Websocket相关的逻辑都应该收敛在这里。
  *
  * */
-import { WebSocketStream } from "@/infra";
+import { yrp3dToStocGameMsgBuffers } from "@/api/ocgcore/replay";
+import { LocalReplayStream, WebSocketStream } from "@/infra";
 
 import handleSocketOpen from "../service/onSocketOpen";
 
@@ -23,15 +24,11 @@ export function initSocket(initInfo: {
 }
 
 export function initReplaySocket(replayInfo: {
-  url: string; // 提供回放服务的地址
   data: ArrayBuffer; // 回放数据
 }): WebSocketStream {
-  const { url, data } = replayInfo;
-  return new WebSocketStream(url, (conn, _event) => {
-    console.info("replay websocket open.");
-    conn.ws.binaryType = "arraybuffer";
-    conn.ws.send(data);
-  });
+  const { data } = replayInfo;
+
+  return new LocalReplayStream(yrp3dToStocGameMsgBuffers(data));
 }
 
 export function sendSocketData(conn: WebSocketStream, payload: Uint8Array) {

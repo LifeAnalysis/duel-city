@@ -4,6 +4,8 @@ import {
   CloseCircleFilled,
   FileSearchOutlined,
   MessageFilled,
+  PauseCircleFilled,
+  PlayCircleFilled,
   RobotFilled,
   RobotOutlined,
   StepForwardFilled,
@@ -29,7 +31,7 @@ import {
   sendSurrender,
   ygopro,
 } from "@/api";
-import { ChainSetting, matStore } from "@/stores";
+import { ChainSetting, matStore, replayStore } from "@/stores";
 import { IconFont } from "@/ui/Shared";
 
 import styles from "./index.module.scss";
@@ -328,6 +330,7 @@ export const Menu = () => {
   return (
     <div className={styles["menu-container"]}>
       <SelectManager />
+      <ReplayControl />
       <DropdownWithTitle
         title={i18n("SelectPhase")}
         menu={{ items: phaseSwitchItems }}
@@ -379,6 +382,46 @@ export const Menu = () => {
         <Button icon={<CloseCircleFilled />} type="text"></Button>
       </DropdownWithTitle>
     </div>
+  );
+};
+
+const ReplayControl: React.FC = () => {
+  const { isReplay, paused, waiting, currentIndex } = useSnapshot(replayStore);
+
+  if (!isReplay) return <></>;
+
+  const togglePaused = () => {
+    if (replayStore.paused) replayStore.resume();
+    else replayStore.pause();
+  };
+
+  return (
+    <>
+      <Tooltip title={paused ? "Resume replay" : "Pause replay"}>
+        <Button
+          aria-label={paused ? "Resume replay" : "Pause replay"}
+          data-testid="replay-toggle"
+          data-replay-index={currentIndex}
+          data-replay-paused={paused}
+          data-replay-waiting={waiting}
+          icon={paused ? <PlayCircleFilled /> : <PauseCircleFilled />}
+          onClick={togglePaused}
+          type="text"
+        />
+      </Tooltip>
+      <Tooltip title="Advance replay">
+        <Button
+          aria-label="Advance replay"
+          data-testid="replay-advance"
+          data-replay-index={currentIndex}
+          data-replay-waiting={waiting}
+          disabled={!paused || !waiting}
+          icon={<StepForwardFilled />}
+          onClick={() => replayStore.advance()}
+          type="text"
+        />
+      </Tooltip>
+    </>
   );
 };
 

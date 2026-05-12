@@ -111,7 +111,7 @@ export const replayStart = () => {
 /** 单独抽离出来，以便可以在 Match.tsx 中调用，跳过Modal直接加载回放，便于开发 */
 export const launchReplay = async (replayData: ArrayBuffer) => {
   // 标记为回放模式
-  replayStore.isReplay = true;
+  replayStore.beginReplay();
 
   await connectSrvpro({
     ip: "",
