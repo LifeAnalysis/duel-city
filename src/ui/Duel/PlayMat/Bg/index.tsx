@@ -11,11 +11,26 @@ import {
   type PlaceInteractivity,
   placeStore,
 } from "@/stores";
-import { BgChain, ChainProps } from "@/ui/Shared";
+import { BgChain, type ChainMarker, type ChainProps } from "@/ui/Shared";
 
 import styles from "./index.module.scss";
 
 const { MZONE, SZONE, EXTRA, GRAVE, REMOVED } = ygopro.CardZone;
+
+const getController = (opponent = false) => {
+  if (opponent) return isMe(0) ? 1 : 0;
+
+  return isMe(0) ? 0 : 1;
+};
+
+const toChainMarkers = (
+  chainIndex: readonly number[],
+  location: Omit<ChainMarker, "index">,
+): ChainMarker[] =>
+  chainIndex.map((index) => ({
+    ...location,
+    index,
+  }));
 
 const BgBlock: React.FC<
   React.HTMLProps<HTMLDivElement> & {
@@ -49,6 +64,9 @@ const BgExtraRow: React.FC<{
   opSnap: Snapshot<BlockState[]>;
 }> = ({ meSnap, opSnap }) => {
   const container = getUIContainer();
+  const meController = getController();
+  const opController = getController(true);
+
   return (
     <div className={classnames(styles.row)}>
       {Array.from({ length: 2 }).map((_, i) => (
@@ -62,7 +80,18 @@ const BgExtraRow: React.FC<{
           disabled={meSnap[i].disabled || opSnap[1 - i].disabled}
           highlight={!!meSnap[i].interactivity || !!opSnap[1 - i].interactivity}
           chains={{
-            chains: meSnap[i].chainIndex.concat(opSnap[1 - i].chainIndex),
+            chains: [
+              ...toChainMarkers(meSnap[i].chainIndex, {
+                controller: meController,
+                zone: MZONE,
+                sequence: i + 5,
+              }),
+              ...toChainMarkers(opSnap[1 - i].chainIndex, {
+                controller: opController,
+                zone: MZONE,
+                sequence: 6 - i,
+              }),
+            ],
           }}
         />
       ))}
@@ -76,6 +105,9 @@ const BgRow: React.FC<{
   snap: Snapshot<BlockState[]>;
 }> = ({ szone = false, opponent = false, snap }) => {
   const container = getUIContainer();
+  const controller = getController(opponent);
+  const zone = szone ? SZONE : MZONE;
+
   return (
     <div className={classnames(styles.row, { [styles.opponent]: opponent })}>
       {Array.from({ length: 5 }).map((_, i) => (
@@ -85,7 +117,13 @@ const BgRow: React.FC<{
           onClick={() => onBlockClick(container, snap[i].interactivity)}
           disabled={snap[i].disabled}
           highlight={!!snap[i].interactivity}
-          chains={{ chains: snap[i].chainIndex }}
+          chains={{
+            chains: toChainMarkers(snap[i].chainIndex, {
+              controller,
+              zone,
+              sequence: i,
+            }),
+          }}
         />
       ))}
     </div>
@@ -95,10 +133,10 @@ const BgRow: React.FC<{
 const BgOtherBlocks: React.FC<{ op?: boolean }> = ({ op }) => {
   useSnapshot(cardStore);
   const container = getUIContainer();
-  const meController = isMe(0) ? 0 : 1;
+  const controller = getController(op);
   const judgeGlowing = (zone: ygopro.CardZone) =>
     !!cardStore
-      .at(zone, meController)
+      .at(zone, controller)
       .reduce((sum, c) => (sum += c.idleInteractivities.length), 0);
   const glowingExtra = judgeGlowing(EXTRA);
   const glowingGraveyard = judgeGlowing(GRAVE);
@@ -109,12 +147,17 @@ const BgOtherBlocks: React.FC<{ op?: boolean }> = ({ op }) => {
   const removed = op ? snap[REMOVED].op : snap[REMOVED].me;
   const extra = op ? snap[EXTRA].op : snap[EXTRA].me;
 
-  const getN = (zone: ygopro.CardZone) =>
-    cardStore.at(zone, meController).length;
+  const getN = (zone: ygopro.CardZone) => cardStore.at(zone, controller).length;
 
-  const genChains = (states: Snapshot<BlockState[]>) => {
-    const chains: number[] = states.flatMap((state) => state.chainIndex);
-    chains.sort();
+  const genChains = (states: Snapshot<BlockState[]>, zone: ygopro.CardZone) => {
+    const chains: ChainMarker[] = states.flatMap((state, sequence) =>
+      toChainMarkers(state.chainIndex, {
+        controller,
+        zone,
+        sequence,
+      }),
+    );
+    chains.sort((a, b) => a.index - b.index);
 
     return chains;
   };
@@ -125,7 +168,7 @@ const BgOtherBlocks: React.FC<{ op?: boolean }> = ({ op }) => {
         className={styles.banish}
         glowing={!op && glowingBanish}
         chains={{
-          chains: genChains(removed),
+          chains: genChains(removed, REMOVED),
           op,
           nBelow: getN(REMOVED),
         }}
@@ -134,7 +177,7 @@ const BgOtherBlocks: React.FC<{ op?: boolean }> = ({ op }) => {
         className={styles.graveyard}
         glowing={!op && glowingGraveyard}
         chains={{
-          chains: genChains(grave),
+          chains: genChains(grave, GRAVE),
           op,
           nBelow: getN(GRAVE),
         }}
@@ -144,14 +187,21 @@ const BgOtherBlocks: React.FC<{ op?: boolean }> = ({ op }) => {
         onClick={() => onBlockClick(container, field.interactivity)}
         disabled={field.disabled}
         highlight={!!field.interactivity}
-        chains={{ chains: field.chainIndex, op }}
+        chains={{
+          chains: toChainMarkers(field.chainIndex, {
+            controller,
+            zone: SZONE,
+            sequence: 5,
+          }),
+          op,
+        }}
       />
       <BgBlock className={styles.deck} chains={{ chains: [] }} />
       <BgBlock
         className={classnames(styles.deck, styles["extra-deck"])}
         glowing={!op && glowingExtra}
         chains={{
-          chains: genChains(extra),
+          chains: genChains(extra, EXTRA),
           op,
           nBelow: getN(EXTRA),
         }}
