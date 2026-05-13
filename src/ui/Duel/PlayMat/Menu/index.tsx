@@ -31,7 +31,12 @@ import {
   sendSurrender,
   ygopro,
 } from "@/api";
-import { ChainSetting, matStore, replayStore } from "@/stores";
+import {
+  ChainSetting,
+  DEFAULT_REPLAY_ADVANCE_MASK,
+  matStore,
+  replayStore,
+} from "@/stores";
 import { IconFont } from "@/ui/Shared";
 
 import styles from "./index.module.scss";
@@ -47,6 +52,11 @@ import { openChatBox } from "../ChatBox";
 const { useToken } = theme;
 
 const FINISH_CANCEL_RESPONSE = -1;
+const REPLAY_ADVANCE_EVENT = "neos:replay-advance";
+
+interface ReplayAdvanceEventDetail {
+  advanceMask?: number;
+}
 
 // Define the possible language codes (I18N)
 type Language = "en" | "br" | "pt" | "fr" | "ja" | "ko" | "es" | "cn";
@@ -388,6 +398,25 @@ export const Menu = () => {
 const ReplayControl: React.FC = () => {
   const { isReplay, paused, waiting, currentIndex } = useSnapshot(replayStore);
 
+  useEffect(() => {
+    const advanceReplay = (event: Event) => {
+      const { advanceMask } =
+        (event as CustomEvent<ReplayAdvanceEventDetail>).detail ?? {};
+
+      if (typeof advanceMask === "number") {
+        replayStore.advance(advanceMask);
+      } else {
+        replayStore.advance();
+      }
+    };
+
+    window.addEventListener(REPLAY_ADVANCE_EVENT, advanceReplay);
+
+    return () => {
+      window.removeEventListener(REPLAY_ADVANCE_EVENT, advanceReplay);
+    };
+  }, []);
+
   if (!isReplay) return <></>;
 
   const togglePaused = () => {
@@ -413,6 +442,7 @@ const ReplayControl: React.FC = () => {
         <Button
           aria-label="Advance replay"
           data-testid="replay-advance"
+          data-replay-default-advance-mask={DEFAULT_REPLAY_ADVANCE_MASK}
           data-replay-index={currentIndex}
           data-replay-waiting={waiting}
           disabled={!paused || !waiting}

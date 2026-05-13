@@ -59,7 +59,7 @@ Neos 现在不依赖远程 `replay.neos.moe` 服务来播放 `.yrp3d`。前端�
 为了让真实录像的中间态断言稳定，项目侧提供了 replay 控制能力：
 
 - 暂停：停止继续消费本地 replay 流中的后续 `GAME_MSG`。
-- 下一步：在暂停状态下只放行一个后续 `GAME_MSG`。
+- 下一步：在暂停状态下推进到下一条关键 `GAME_MSG`，跳过 `update_data`、`hint`、`wait` 等高频同步消息。
 - 继续：恢复自动消费后续 replay 消息。
 
 控制按钮只在 replay 模式下显示，位于 Duel 页面右下角菜单中：
@@ -67,28 +67,45 @@ Neos 现在不依赖远程 `replay.neos.moe` 服务来播放 `.yrp3d`。前端�
 - `data-testid="replay-toggle"`：暂停/继续。
 - `data-testid="replay-advance"`：下一步。
 
+默认下一步会停在卡牌移动、抽卡、阶段变化、召唤、连锁、攻击、LP 变化、胜负结算等用户可观察事件上。被跳过的消息仍然会正常进入 `adaptStoc -> handleGameMsg -> store -> DOM` 流程，只是不作为暂停点。
+
 测试侧公共函数封装在 `tests/e2e/helpers/replay.ts`：
 
 - `uploadReplay(page, replayPath)`：打开 `/match`，通过 UI 上传 replay，并等待进入 `/duel`。
 - `pauseReplay(page)`：点击 replay 暂停按钮，并等待按钮状态变为 paused。
-- `advanceReplay(page, steps)`：点击下一步按钮。
+- `advanceReplay(page, steps)`：点击下一步按钮，每次推进到下一条关键 `GAME_MSG`。
+- `advanceReplayTo(page, advanceMask)`：通过测试控制事件推进到下一条匹配 bit flag 的 `GAME_MSG`。
 - `duelCards(page)`：返回所有 Duel 卡牌 DOM locator。
 - `expectDuelCardZoneCounts(page, expected)`：按 zone 断言卡牌数量。
 - `writeReplayFixture(testInfo, fileName, replay)`：把测试生成的 replay 写入 Playwright 临时目录。
 
 这些 helper 只封装 Playwright 对页面的操作和 DOM 读取，不 import 项目业务代码。
 
+`advanceMask` 是 bit flag，例如：
+
+```ts
+ReplayAdvanceFlag.MOVE | ReplayAdvanceFlag.DRAW | ReplayAdvanceFlag.WIN;
+```
+
+当测试只关心卡牌移动、抽卡和结算时，可以用这个 mask 跳过其他关键消息。默认 mask 不包含 `UPDATE_DATA`，因为它通常只是同步卡牌数据，出现频率很高，不适合作为自动断言 checkpoint。
+
+`collectReplayExpected(page)` 默认使用更窄的 expected 生成 mask：它只停在更可能影响卡牌 DOM 或连锁标记的消息上，例如 `DRAW`、`MOVE`、`SET`、召唤、连锁、`POS_CHANGE`、`BECOME_TARGET`、`RELOAD_FIELD`、洗牌、计数器和 `WIN`。阶段变化、LP 变化、攻击宣言这类当前 expected 不断言的 UI 状态不会作为默认 checkpoint。
+
 ## Expected JSON
 
-真实 replay 用例可以把预期 DOM 状态放在 replay 同目录的 `expected.json` 中：
+真实 replay 用例按“一个目录一个 case”的方式组织，`replay.yrp3d` 和预期 DOM 状态 `expected.json` 放在同一个目录中：
 
 ```text
-tests/e2e/fixtures/replays/case-001/
+tests/e2e/fixtures/replays/<case-name>/
   replay.yrp3d
   expected.json
 ```
 
+`tests/e2e/replay.spec.ts` 会在启动时扫描 `tests/e2e/fixtures/replays/*`，对每个同时包含 `replay.yrp3d` 和 `expected.json` 的目录生成一个 Playwright 测试。`UPDATE_EXPECTED=1` 时，目录里只要有 `replay.yrp3d` 就会生成或更新 `expected.json`。目录名会进入测试名，建议使用稳定、可读的 kebab-case，例如 `minimal-duel`、`dragon-combo-win`。
+
 `expected.json` 描述的是 Playwright 能从页面 DOM 观察到的对局状态，不是 `matStore`、`cardStore` 或其他内部 store 的快照。
+
+`expected.json` 由 Playwright 自动生成。生成器会在 replay 暂停后按 expected 生成 mask 推进，每推进一次采集一次 DOM 快照；如果快照和上一个已记录 checkpoint 不同，就自动追加一个 checkpoint。
 
 建议格式：
 
@@ -97,7 +114,7 @@ tests/e2e/fixtures/replays/case-001/
   "version": 1,
   "checkpoints": [
     {
-      "advance": 12,
+      "advance": 0,
       "cards": [
         {
           "code": 89631139,
@@ -113,6 +130,26 @@ tests/e2e/fixtures/replays/case-001/
           "selected": false,
           "targeted": false,
           "disabled": false
+        }
+      ],
+      "deckCounts": [
+        {
+          "controller": 0,
+          "count": 34
+        },
+        {
+          "controller": 1,
+          "count": 31
+        }
+      ],
+      "extraCounts": [
+        {
+          "controller": 0,
+          "count": 12
+        },
+        {
+          "controller": 1,
+          "count": 9
         }
       ],
       "chainMarkers": [
@@ -131,14 +168,56 @@ tests/e2e/fixtures/replays/case-001/
 字段语义：
 
 - `version`：expected 文件格式版本。
-- `checkpoints`：按顺序执行的断言点。
-- `advance`：从上一个 checkpoint 继续推进多少条 `GAME_MSG`。
-- `cards`：当前 DOM 中所有 `[data-testid="duel-card"]` 的完整语义快照，默认精确匹配；没有写在数组里的卡不应该出现在 DOM 中。
+- `checkpoints`：按顺序执行的断言点，只记录 DOM 快照发生变化的点。
+- `advance`：从上一个已记录 checkpoint 继续推进多少次 replay 下一步。每次下一步默认会跳到下一条关键 `GAME_MSG`，不是原始消息流里的每一条 `GAME_MSG`。第一个 checkpoint 通常是 `0`，表示进入 Duel 后的初始暂停状态。
+- `cards`：当前 DOM 中需要逐张断言的 `[data-testid="duel-card"]` 完整语义快照，默认精确匹配；不包含 `DECK`、`EXTRA`、`TZONE` 区域。
+- `deckCounts`：当前 DOM 中 `DECK` 区域的剩余卡组数量，只按 `controller` 记录数量，不记录卡组内每张卡的 `code`、位置、状态或顺序。
+- `extraCounts`：当前 DOM 中 `EXTRA` 区域的剩余额外卡组数量，只按 `controller` 记录数量，不记录额外卡组内每张卡的 `code`、位置、状态或顺序。
 - `chainMarkers`：当前 DOM 中所有 `[data-testid="duel-chain-marker"]` 的可见连锁数字标记，默认精确匹配。
 
 `cards` 不应包含 `uuid`。`data-card-uuid` 是运行时实例标识，不适合作为稳定 expected。
 
+`cards` 也不包含 `zone = "DECK"` 或 `zone = "EXTRA"` 的卡。卡组和额外卡组通常不可见且单张卡状态断言价值低，expected 只用 `deckCounts` 和 `extraCounts` 验证剩余数量。
+
+`TZONE` 不进入 expected。它属于当前渲染里的辅助占位区域，不作为 replay 黑盒断言对象。
+
 `chainMarkers` 表示已经形成的连锁栈在场上的可见标记。回放不会等待玩家选择连锁，因此 `select_chain` 弹窗状态不进入 expected。当前 UI 每个位置只显示最大的连锁编号；如果同一位置存在多个连锁编号，expected 中也只记录实际可见的那个标记。
+
+更新 expected：
+
+```bash
+UPDATE_EXPECTED=1 npm run test:e2e -- --project=chrome
+```
+
+这个命令会批量跑所有受管 replay fixture，并把每个 case 目录下的 `expected.json` 更新为当前实现生成出的 DOM snapshot。普通测试运行会重新采集 replay DOM 快照，并在每个实际 checkpoint 产生时立即和已有 `expected.json` 的对应 checkpoint 做精确比较：
+
+```bash
+npm run test:e2e -- --project=chrome
+```
+
+只跑受管 replay fixture：
+
+```bash
+npm run test:e2e -- --project=chrome --grep "managed replay fixtures"
+```
+
+真实录像耗时较长时，可以调大上限：
+
+```bash
+REPLAY_FIXTURE_TIMEOUT=600000 \
+REPLAY_FIXTURE_MAX_STEPS=50000 \
+npm run test:e2e -- --project=chrome --grep "managed replay fixtures"
+```
+
+验证外部真实 replay 时，可以显式传入 replay 文件和 expected 文件：
+
+```bash
+REAL_REPLAY_PATH=/path/to/replay.yrp3d \
+REAL_REPLAY_EXPECTED_PATH=/path/to/expected.json \
+npm run test:e2e -- --project=chrome --grep "external yrp3d"
+```
+
+自动生成的 expected 代表“当前实现的可观察行为”。第一次生成后仍然需要 review `expected.json` diff，确认它没有把已有 bug 记录成基准。
 
 ## 黑盒边界
 
