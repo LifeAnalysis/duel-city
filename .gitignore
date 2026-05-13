@@ -32,3 +32,4 @@ yarn-error.log*
 *.module.scss.d.ts
 
 *.yrp3d
+!tests/e2e/fixtures/replays/**/*.yrp3d

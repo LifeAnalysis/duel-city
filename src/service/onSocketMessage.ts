@@ -55,9 +55,12 @@ async function _handle(
   for (const packet of packets) {
     const pb = adaptStoc(packet);
     const isReplayGameMsg = replayStore.isReplay && pb.msg === "stoc_game_msg";
+    const replayGameMsg = isReplayGameMsg
+      ? pb.stoc_game_msg.gameMsg
+      : undefined;
 
     if (isReplayGameMsg) {
-      await replayStore.waitForAdvance();
+      await replayStore.waitForAdvance(replayGameMsg);
     }
 
     switch (pb.msg) {
@@ -142,7 +145,7 @@ async function _handle(
     }
 
     if (isReplayGameMsg) {
-      replayStore.markAdvanced();
+      replayStore.markAdvanced(replayGameMsg);
     }
   }
 }
