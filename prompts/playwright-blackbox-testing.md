@@ -78,6 +78,68 @@ Neos 现在不依赖远程 `replay.neos.moe` 服务来播放 `.yrp3d`。前端�
 
 这些 helper 只封装 Playwright 对页面的操作和 DOM 读取，不 import 项目业务代码。
 
+## Expected JSON
+
+真实 replay 用例可以把预期 DOM 状态放在 replay 同目录的 `expected.json` 中：
+
+```text
+tests/e2e/fixtures/replays/case-001/
+  replay.yrp3d
+  expected.json
+```
+
+`expected.json` 描述的是 Playwright 能从页面 DOM 观察到的对局状态，不是 `matStore`、`cardStore` 或其他内部 store 的快照。
+
+建议格式：
+
+```json
+{
+  "version": 1,
+  "checkpoints": [
+    {
+      "advance": 12,
+      "cards": [
+        {
+          "code": 89631139,
+          "controller": 0,
+          "zone": "MZONE",
+          "sequence": 2,
+          "position": "FACEUP_ATTACK",
+          "isOverlay": false,
+          "overlaySequence": 0,
+          "isToken": false,
+          "status": 0,
+          "selectable": false,
+          "selected": false,
+          "targeted": false,
+          "disabled": false
+        }
+      ],
+      "chainMarkers": [
+        {
+          "index": 1,
+          "controller": 0,
+          "zone": "MZONE",
+          "sequence": 2
+        }
+      ]
+    }
+  ]
+}
+```
+
+字段语义：
+
+- `version`：expected 文件格式版本。
+- `checkpoints`：按顺序执行的断言点。
+- `advance`：从上一个 checkpoint 继续推进多少条 `GAME_MSG`。
+- `cards`：当前 DOM 中所有 `[data-testid="duel-card"]` 的完整语义快照，默认精确匹配；没有写在数组里的卡不应该出现在 DOM 中。
+- `chainMarkers`：当前 DOM 中所有 `[data-testid="duel-chain-marker"]` 的可见连锁数字标记，默认精确匹配。
+
+`cards` 不应包含 `uuid`。`data-card-uuid` 是运行时实例标识，不适合作为稳定 expected。
+
+`chainMarkers` 表示已经形成的连锁栈在场上的可见标记。回放不会等待玩家选择连锁，因此 `select_chain` 弹窗状态不进入 expected。当前 UI 每个位置只显示最大的连锁编号；如果同一位置存在多个连锁编号，expected 中也只记录实际可见的那个标记。
+
 ## 黑盒边界
 
 这类测试应该避免：
@@ -96,6 +158,14 @@ Neos 现在不依赖远程 `replay.neos.moe` 服务来播放 `.yrp3d`。前端�
 - 截图和 trace，用于定位 UI 失败原因。
 
 当前测试使用 `[data-testid="duel-card"]` 和 `data-card-zone` 等 DOM 属性断言卡牌渲染结果。这些属性被当作页面可观察输出，不代表测试直接读取内部 store。
+
+连锁标记使用 `[data-testid="duel-chain-marker"]` 和 `data-chain-*` 属性断言。关键属性包括：
+
+- `data-chain-index`
+- `data-chain-controller`
+- `data-chain-zone`
+- `data-chain-zone-value`
+- `data-chain-sequence`
 
 Replay 控制同样通过真实 DOM 按钮完成，测试不直接调用 `replayStore.pause()` 或 `replayStore.advance()`。
 
