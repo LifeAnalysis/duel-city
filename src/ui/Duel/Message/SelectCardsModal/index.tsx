@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { INTERNAL_Snapshot as Snapshot, useSnapshot } from "valtio";
 
-import { type CardMeta, Region, type ygopro } from "@/api";
+import { type CardMeta, Region, ygopro } from "@/api";
 import { fetchStrings } from "@/api";
 import { CardType, isMe, matStore } from "@/stores";
 import { ScrollableArea, YgoCard } from "@/ui/Shared";
@@ -27,6 +27,7 @@ export interface SelectCardsModalProps {
   finishable: boolean; // 选择足够了之后，能否确认
   totalLevels: number; // 需要的总等级数（用于同调/仪式/...）
   overflow: boolean; // 选择等级时候，是否可以溢出
+  isChain?: boolean; // 是否是 select_chain 选择
   onSubmit: (options: Snapshot<Option[]>) => void;
   onCancel: () => void;
   onFinish: () => void;
@@ -44,6 +45,7 @@ export const SelectCardsModal: React.FC<SelectCardsModalProps> = ({
   finishable,
   totalLevels,
   overflow,
+  isChain = false,
   onSubmit,
   onCancel,
   onFinish,
@@ -170,6 +172,9 @@ export const SelectCardsModal: React.FC<SelectCardsModalProps> = ({
         data-select-min={min}
         data-select-max={max}
         data-select-single={single}
+        data-select-is-chain={isChain}
+        data-select-cancelable={cancelable}
+        data-select-finishable={finishable}
         direction="vertical"
         style={{ width: "100%", overflow: "hidden" }}
       >
@@ -209,8 +214,14 @@ export const SelectCardsModal: React.FC<SelectCardsModalProps> = ({
                           data-testid="duel-select-card-option"
                           data-card-code={card.meta.id}
                           data-card-controller={card.location?.controller}
+                          data-card-zone={
+                            card.location?.zone === undefined
+                              ? undefined
+                              : ygopro.CardZone[card.location.zone]
+                          }
                           data-card-zone-value={card.location?.zone}
                           data-card-sequence={card.location?.sequence}
+                          data-card-response={card.response}
                           onDoubleClick={() => onQuickSelect(card as Option)}
                         >
                           <CheckCard

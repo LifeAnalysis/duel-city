@@ -265,6 +265,13 @@ export async function expectDuelStarted(page: Page) {
   });
 }
 
+export async function expectMyTurn(page: Page, timeout = 5000) {
+  await expect(
+    page.getByTestId("duel-phase-select"),
+    "Expected to start as the turn player.",
+  ).toBeEnabled({ timeout });
+}
+
 export async function setChainSetting(page: Page, setting: LiveChainSetting) {
   const toggle = page.getByTestId("duel-chain-setting");
 
@@ -305,6 +312,66 @@ export function duelCard(
   return page.locator(selector);
 }
 
+export async function expectCardIdleAction(
+  card: Locator,
+  action: string,
+  options?: {
+    source?: "idle" | "battle";
+    directAttackable?: boolean;
+  },
+) {
+  await expect(card).toHaveAttribute(
+    "data-card-idle-actions",
+    new RegExp(`(^| )${action}( |$)`),
+    { timeout: 60000 },
+  );
+
+  if (options?.source) {
+    await expect(card).toHaveAttribute(
+      "data-card-idle-response-sources",
+      new RegExp(`(^| )${action}:${options.source}( |$)`),
+    );
+  }
+
+  if (options?.directAttackable !== undefined) {
+    await expect(card).toHaveAttribute(
+      "data-card-attack-directable",
+      String(options.directAttackable),
+    );
+  }
+}
+
+export async function expectNoIdleAction(page: Page, action: string) {
+  await expect(
+    page.locator(
+      `[data-testid="duel-card"][data-card-idle-actions~="${action}"]`,
+    ),
+  ).toHaveCount(0, { timeout: 60000 });
+}
+
+export async function getPlayerLife(page: Page, player: "me" | "op") {
+  const value = await page
+    .locator(`[data-testid="duel-player-life"][data-player="${player}"]`)
+    .getAttribute("data-life");
+
+  expect(value, `Expected ${player} life points to be present.`).not.toBeNull();
+
+  return Number(value);
+}
+
+export async function expectPlayerLifeBelow(
+  page: Page,
+  player: "me" | "op",
+  life: number,
+) {
+  await expect
+    .poll(async () => getPlayerLife(page, player), {
+      message: `Expected ${player} life points to drop below ${life}.`,
+      timeout: 120000,
+    })
+    .toBeLessThan(life);
+}
+
 export async function activateHandCard(page: Page, cardCode: number) {
   const handCard = duelCard(page, {
     code: cardCode,
@@ -342,6 +409,16 @@ export async function getControllerOfHandCard(page: Page, cardCode: number) {
 }
 
 export async function setHandCard(page: Page, cardCode: number) {
+  return setHandCardToSpellTrapZone(page, cardCode, { sequence: 2 });
+}
+
+export async function setHandCardToSpellTrapZone(
+  page: Page,
+  cardCode: number,
+  options: {
+    sequence: number;
+  },
+) {
   const handCard = duelCard(page, {
     code: cardCode,
     zone: "HAND",
@@ -349,7 +426,43 @@ export async function setHandCard(page: Page, cardCode: number) {
   }).first();
 
   await expect(handCard).toBeVisible({ timeout: 60000 });
+  const controller = await handCard.getAttribute("data-card-controller");
+  expect(
+    controller,
+    "Expected settable hand card to have a controller.",
+  ).not.toBeNull();
+
   await clickCardAction(page, handCard, "sset");
+
+  await chooseSelectableZoneIfAvailable(page, {
+    zone: "SZONE",
+    controller: controller!,
+    sequence: options.sequence,
+    timeout: 5000,
+  });
+  await expect(
+    duelCard(page, {
+      controller,
+      zone: "SZONE",
+      sequence: options.sequence,
+    }).first(),
+  ).toBeVisible({ timeout: 60000 });
+
+  return controller!;
+}
+
+export async function expectControllerHandCount(
+  page: Page,
+  controller: string | number,
+  count: number,
+) {
+  await expect(
+    duelCard(page, {
+      controller,
+      zone: "HAND",
+    }),
+    `Expected controller ${controller} to have ${count} hand cards.`,
+  ).toHaveCount(count, { timeout: 60000 });
 }
 
 export async function selectCardsFromModal(page: Page, cardCodes: number[]) {
@@ -379,6 +492,102 @@ export async function selectCardsFromModal(page: Page, cardCodes: number[]) {
     .last();
   await expect(submit).toBeEnabled({ timeout: 30000 });
   await submit.click();
+}
+
+export async function expectSelectChainModal(
+  page: Page,
+  options: {
+    cardCodes: number[];
+    controller?: string | number;
+    zone?: string;
+    min?: number;
+    max?: number;
+    cancelable?: boolean;
+  },
+) {
+  const modal = activeSelectChainModal(page);
+
+  await expect(modal).toBeVisible({ timeout: 120000 });
+  await expect(modal).toHaveAttribute(
+    "data-select-min",
+    String(options.min ?? 1),
+  );
+  await expect(modal).toHaveAttribute(
+    "data-select-max",
+    String(options.max ?? 1),
+  );
+  await expect(modal).toHaveAttribute("data-select-single", "false");
+  await expect(modal).toHaveAttribute("data-select-is-chain", "true");
+  await expect(modal).toHaveAttribute(
+    "data-select-cancelable",
+    String(options.cancelable ?? true),
+  );
+  await expect(
+    modal.locator('[data-testid="duel-select-card-option"]'),
+  ).toHaveCount(options.cardCodes.length);
+
+  for (const cardCode of options.cardCodes) {
+    const selector = [
+      '[data-testid="duel-select-card-option"]',
+      `[data-card-code="${cardCode}"]`,
+      options.controller !== undefined
+        ? `[data-card-controller="${options.controller}"]`
+        : "",
+      options.zone ? `[data-card-zone="${options.zone}"]` : "",
+    ].join("");
+
+    await expect(modal.locator(selector)).toHaveCount(1);
+  }
+
+  await expect(
+    page.locator('[data-testid="duel-select-card-cancel"]:visible').last(),
+  ).toBeVisible();
+  await expect(
+    page.locator('[data-testid="duel-select-card-submit"]:visible').last(),
+  ).toBeDisabled();
+}
+
+export async function selectChainCardFromModal(page: Page, cardCode: number) {
+  const modal = activeSelectChainModal(page);
+
+  await expect(modal).toBeVisible({
+    timeout: 120000,
+  });
+
+  await modal
+    .locator(
+      `[data-testid="duel-select-card-option"][data-card-code="${cardCode}"]`,
+    )
+    .first()
+    .click();
+
+  const submit = page
+    .locator('[data-testid="duel-select-card-submit"]:enabled')
+    .last();
+  await expect(submit).toBeEnabled({ timeout: 30000 });
+  await submit.click();
+}
+
+export async function expectChainMarker(
+  page: Page,
+  options: {
+    index: number;
+    controller: string | number;
+    zone: string;
+    sequence: number;
+  },
+) {
+  const marker = page.locator(
+    [
+      '[data-testid="duel-chain-marker"]',
+      `[data-chain-index="${options.index}"]`,
+      `[data-chain-controller="${options.controller}"]`,
+      `[data-chain-zone="${options.zone}"]`,
+      `[data-chain-sequence="${options.sequence}"]`,
+    ].join(""),
+  );
+
+  await expect(marker).toBeVisible({ timeout: 60000 });
 }
 
 export async function selectCardFromModalIfVisible(
@@ -421,6 +630,93 @@ export async function chooseFirstOption(page: Page) {
     .first()
     .click();
   await page.locator('[data-testid="duel-option-submit"]:visible').click();
+}
+
+export async function announceNumbers(page: Page, numbers: number[]) {
+  for (const [index, number] of numbers.entries()) {
+    const modal = page.locator('[data-testid="duel-option-modal"]:visible');
+    await expect(modal).toBeVisible({ timeout: 60000 });
+    await expect(modal).toHaveAttribute("data-option-min", "1");
+
+    const option = page
+      .locator(
+        `[data-testid="duel-option-item"][data-option-text="${number}"]:visible`,
+      )
+      .first();
+
+    await expect(option).toBeVisible({ timeout: 30000 });
+    await option.click();
+
+    const submit = page.locator('[data-testid="duel-option-submit"]:visible');
+    await expect(submit).toBeEnabled({ timeout: 30000 });
+    await submit.click();
+
+    if (index === numbers.length - 1) {
+      await expect(modal).toBeHidden({ timeout: 60000 });
+    } else {
+      await expect(
+        page.locator(
+          `[data-testid="duel-option-item"][data-option-text="${number}"]:visible`,
+        ),
+      ).toHaveCount(0, { timeout: 60000 });
+    }
+  }
+}
+
+export async function chooseDuelPhase(
+  page: Page,
+  phase: "battle" | "main2" | "end",
+) {
+  const phaseSelect = page.getByTestId("duel-phase-select");
+  const previousPhase = await phaseSelect.getAttribute("data-current-phase");
+
+  for (const _ of [0, 1, 2]) {
+    await phaseSelect.click();
+
+    const phaseItem = page
+      .locator(`[data-testid="duel-phase-${phase}"]:visible`)
+      .last();
+    await expect(phaseItem).toBeVisible({ timeout: 30000 });
+    await phaseItem.click();
+
+    try {
+      await expect
+        .poll(async () => phaseSelect.getAttribute("data-current-phase"), {
+          message: `Expected duel phase to leave ${previousPhase} after selecting ${phase}.`,
+          timeout: 5000,
+        })
+        .not.toBe(previousPhase);
+      return;
+    } catch {
+      await page.waitForTimeout(500);
+    }
+  }
+
+  await expect
+    .poll(async () => phaseSelect.getAttribute("data-current-phase"), {
+      message: `Expected duel phase to leave ${previousPhase} after selecting ${phase}.`,
+    })
+    .not.toBe(previousPhase);
+}
+
+export async function endCurrentTurn(page: Page) {
+  const phaseSelect = page.getByTestId("duel-phase-select");
+
+  for (const _ of [0, 1, 2]) {
+    if (await phaseSelect.isDisabled()) return;
+
+    await chooseDuelPhase(page, "end");
+
+    try {
+      await expect(phaseSelect).toBeDisabled({ timeout: 10000 });
+      return;
+    } catch {
+      // Selecting End Phase from Main Phase can move only into End Phase.
+      // Click End again while still active to pass priority and finish turn.
+    }
+  }
+
+  await expect(phaseSelect).toBeDisabled({ timeout: 30000 });
 }
 
 export async function chooseYesNo(page: Page, answer: "yes" | "no") {
@@ -725,6 +1021,14 @@ function activeSelectCardsModal(page: Page) {
   return page
     .locator(
       '[data-testid="duel-select-cards-modal"]:visible:not([data-select-max="0"])',
+    )
+    .last();
+}
+
+function activeSelectChainModal(page: Page) {
+  return page
+    .locator(
+      '[data-testid="duel-select-cards-modal"][data-select-is-chain="true"]:visible:not([data-select-max="0"])',
     )
     .last();
 }
