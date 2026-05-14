@@ -5,6 +5,7 @@ import { test } from "@playwright/test";
 import {
   completeDuelStartSelections,
   createCustomRoom,
+  DEFAULT_AI_ROOM_PASSWORD,
   expectDuelStarted,
   installOnlyLiveDeck,
   LIVE_E2E_ENABLED,
@@ -40,7 +41,7 @@ test.describe("live select_place interaction", () => {
       botName: process.env.LIVE_E2E_BOT_NAME,
       playerName: process.env.LIVE_E2E_PLAYER_NAME,
       roomPassword:
-        process.env.LIVE_E2E_ROOM_PASSWORD ?? "AI,SS,NS,NC#有栖川蓝子",
+        process.env.LIVE_E2E_ROOM_PASSWORD ?? DEFAULT_AI_ROOM_PASSWORD,
       roomCodes: process.env.LIVE_E2E_ROOM_CODES,
       roomPrefix: process.env.LIVE_E2E_ROOM_PREFIX,
     });

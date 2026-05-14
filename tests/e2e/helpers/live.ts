@@ -24,6 +24,8 @@ export interface LiveDeck {
 
 export type LiveChainSetting = "all" | "ignore" | "smart";
 
+export const DEFAULT_AI_BOT_NAME = "蓝子";
+export const DEFAULT_AI_ROOM_CODES = "AI,SS,NS,NC";
 export const DEFAULT_AI_ROOM_PASSWORD = "AI,SS,NS,NC#有栖川蓝子";
 
 export function uniqueLiveRoom(options: LiveRoomOptions = {}) {
@@ -38,7 +40,7 @@ export function uniqueLiveRoom(options: LiveRoomOptions = {}) {
   const playerName = options.playerName ?? `e2e-${playerSuffix}`;
 
   return {
-    botName: options.botName ?? "蓝子",
+    botName: options.botName ?? DEFAULT_AI_BOT_NAME,
     playerName,
     password:
       options.roomPassword ?? `${roomCodes}#${roomPrefix}-${roomSuffix}`,
@@ -46,9 +48,10 @@ export function uniqueLiveRoom(options: LiveRoomOptions = {}) {
 }
 
 export async function createCustomRoom(page: Page, options: LiveRoomOptions) {
-  const room = uniqueLiveRoom(options);
+  let room: ReturnType<typeof uniqueLiveRoom> | undefined;
 
   for (const attempt of [1, 2]) {
+    room = uniqueLiveRoom(options);
     await page.goto("/match");
     await expect(page.getByTestId("match-mode-custom-room")).toBeVisible({
       timeout: 120000,
@@ -68,6 +71,7 @@ export async function createCustomRoom(page: Page, options: LiveRoomOptions) {
     }
   }
 
+  if (!room) throw new Error("Expected live room to be generated.");
   await expect(page.getByTestId("waitroom-player-me")).toHaveAttribute(
     "data-player-name",
     room.playerName,
@@ -478,20 +482,220 @@ export async function selectCardsFromModal(page: Page, cardCodes: number[]) {
     return;
   }
 
+  if (cardCodes.length === 1) {
+    const option = modal
+      .locator(
+        `[data-testid="duel-select-card-option"][data-card-code="${cardCodes[0]}"]`,
+      )
+      .first();
+
+    if (await quickSelectSingleCardOptionIfAvailable(modal, option)) return;
+  }
+
   for (const cardCode of cardCodes) {
-    await modal
+    const option = modal
       .locator(
         `[data-testid="duel-select-card-option"][data-card-code="${cardCode}"]`,
       )
-      .first()
-      .click();
+      .first();
+    await chooseSelectCardOption(option);
   }
 
   const submit = page
-    .locator('[data-testid="duel-select-card-submit"]:enabled')
+    .locator('[data-testid="duel-select-card-submit"]:visible:enabled')
     .last();
   await expect(submit).toBeEnabled({ timeout: 30000 });
   await submit.click();
+}
+
+export async function selectVisibleCardsFromModal(
+  page: Page,
+  cardCodes: number[],
+) {
+  const modal = activeSelectCardsModal(page);
+
+  await expect(modal).toBeVisible({
+    timeout: 60000,
+  });
+
+  let selectedCount = 0;
+  for (const cardCode of cardCodes) {
+    const option = modal
+      .locator(
+        `[data-testid="duel-select-card-option"][data-card-code="${cardCode}"]`,
+      )
+      .first();
+
+    if (await option.isVisible()) {
+      await chooseSelectCardOption(option);
+      selectedCount += 1;
+    }
+  }
+
+  expect(
+    selectedCount,
+    "Expected at least one requested card to be selectable in the modal.",
+  ).toBeGreaterThan(0);
+
+  const submit = page
+    .locator('[data-testid="duel-select-card-submit"]:visible:enabled')
+    .last();
+  await expect(submit).toBeEnabled({ timeout: 30000 });
+  await submit.click();
+}
+
+export async function selectVisibleCardsFromModalIfAvailable(
+  page: Page,
+  cardCodes: number[],
+  timeout = 5000,
+) {
+  const modal = activeSelectCardsModal(page);
+
+  try {
+    await expect(modal).toBeVisible({
+      timeout,
+    });
+  } catch {
+    return false;
+  }
+
+  let selectedCount = 0;
+  for (const cardCode of cardCodes) {
+    const option = modal
+      .locator(
+        `[data-testid="duel-select-card-option"][data-card-code="${cardCode}"]`,
+      )
+      .first();
+
+    if (await option.isVisible()) {
+      await chooseSelectCardOption(option);
+      selectedCount += 1;
+    }
+  }
+
+  if (selectedCount === 0) return false;
+
+  const submit = page
+    .locator('[data-testid="duel-select-card-submit"]:visible:enabled')
+    .last();
+  await expect(submit).toBeEnabled({ timeout: 30000 });
+  await submit.dispatchEvent("click");
+
+  return true;
+}
+
+export async function selectFirstCardFromModalIfAvailable(
+  page: Page,
+  timeout = 5000,
+) {
+  const modal = activeSelectCardsModal(page);
+
+  try {
+    await expect(modal).toBeVisible({
+      timeout,
+    });
+  } catch {
+    return false;
+  }
+
+  const option = modal
+    .locator('[data-testid="duel-select-card-option"]')
+    .first();
+  await expect(option).toBeVisible({ timeout: 30000 });
+  await option.dispatchEvent("dblclick");
+
+  return true;
+}
+
+export async function selectCardsIfRequested(
+  page: Page,
+  cardCodes: number[],
+  timeout = 5000,
+) {
+  const deadline = Date.now() + timeout;
+
+  while (Date.now() < deadline) {
+    const modal = activeSelectCardsModal(page);
+    if (await modal.isVisible()) {
+      const requestedOption = modal
+        .locator(
+          `[data-testid="duel-select-card-option"][data-card-code="${cardCodes[0]}"]`,
+        )
+        .first();
+      if (!(await requestedOption.isVisible())) return false;
+
+      await selectCardsFromModal(page, cardCodes);
+
+      return true;
+    }
+
+    const selectable = page
+      .locator(
+        `[data-testid="duel-card"][data-card-code="${cardCodes[0]}"][data-card-selectable="true"]`,
+      )
+      .first();
+    if (await selectable.isVisible()) {
+      await selectSelectableCards(page, cardCodes);
+
+      return true;
+    }
+
+    await page.waitForTimeout(100);
+  }
+
+  return false;
+}
+
+export async function cancelSelectCardsModalIfVisible(page: Page) {
+  const cancel = page
+    .locator('[data-testid="duel-select-card-cancel"]:visible')
+    .last();
+
+  if (await cancel.isVisible()) {
+    await cancel.click();
+    return true;
+  }
+
+  return false;
+}
+
+export async function expectSelectCardsModal(
+  page: Page,
+  options: {
+    cardCodes?: number[];
+    min?: number;
+    max?: number;
+    cancelable?: boolean;
+  } = {},
+) {
+  const modal = activeSelectCardsModal(page);
+
+  await expect(modal).toBeVisible({
+    timeout: 60000,
+  });
+
+  for (const cardCode of options.cardCodes ?? []) {
+    await expect(
+      modal
+        .locator(
+          `[data-testid="duel-select-card-option"][data-card-code="${cardCode}"]`,
+        )
+        .first(),
+    ).toBeVisible({ timeout: 60000 });
+  }
+
+  if (options.min !== undefined) {
+    await expect(modal).toHaveAttribute("data-select-min", String(options.min));
+  }
+  if (options.max !== undefined) {
+    await expect(modal).toHaveAttribute("data-select-max", String(options.max));
+  }
+  if (options.cancelable !== undefined) {
+    await expect(modal).toHaveAttribute(
+      "data-select-cancelable",
+      String(options.cancelable),
+    );
+  }
 }
 
 export async function expectSelectChainModal(
@@ -562,7 +766,7 @@ export async function selectChainCardFromModal(page: Page, cardCode: number) {
     .click();
 
   const submit = page
-    .locator('[data-testid="duel-select-card-submit"]:enabled')
+    .locator('[data-testid="duel-select-card-submit"]:visible:enabled')
     .last();
   await expect(submit).toBeEnabled({ timeout: 30000 });
   await submit.click();
@@ -610,6 +814,18 @@ export async function selectSelectableCards(page: Page, cardCodes: number[]) {
     await expect(card).toBeVisible({ timeout: 60000 });
     await card.click();
     await page.waitForTimeout(250);
+  }
+}
+
+export async function expectSelectableCards(page: Page, cardCodes: number[]) {
+  for (const cardCode of cardCodes) {
+    await expect(
+      page
+        .locator(
+          `[data-testid="duel-card"][data-card-code="${cardCode}"][data-card-selectable="true"]`,
+        )
+        .first(),
+    ).toBeVisible({ timeout: 60000 });
   }
 }
 
@@ -823,6 +1039,58 @@ export async function chooseSelectableZoneIfAvailable(
   return false;
 }
 
+export async function specialSummonHandCardToMainMonsterZone(
+  page: Page,
+  options: {
+    cardCode: number;
+    sequence: number;
+    position?: string;
+  },
+) {
+  const handCard = duelCard(page, {
+    code: options.cardCode,
+    zone: "HAND",
+    idleAction: "SP_SUMMON",
+  }).first();
+
+  await expect(handCard).toBeVisible({ timeout: 60000 });
+
+  const controller = await handCard.getAttribute("data-card-controller");
+  expect(
+    controller,
+    "Expected special summonable hand card to have a controller.",
+  ).not.toBeNull();
+
+  await clickCardAction(page, handCard, "sp_summon");
+  await resolveSummonPlacement(page, {
+    cardCode: options.cardCode,
+    controller: controller!,
+    sequence: options.sequence,
+    position: options.position ?? "FACEUP_ATTACK",
+  });
+
+  return controller!;
+}
+
+export async function specialSummonExtraDeckCardToMainMonsterZone(
+  page: Page,
+  cardCode: number,
+) {
+  const extraCard = duelCard(page, {
+    code: cardCode,
+    zone: "EXTRA",
+    idleAction: "SP_SUMMON",
+  }).first();
+
+  await expect(extraCard).toBeVisible({ timeout: 60000 });
+  await expectCardIdleAction(extraCard, "SP_SUMMON", { source: "idle" });
+  await clickCardAction(page, extraCard, "sp_summon");
+  expect(
+    await selectCardFromActiveModalIfVisible(page, cardCode, 60000),
+    "Expected extra deck summon action to request the extra deck card.",
+  ).toBe(true);
+}
+
 export async function resolveSummonPlacement(
   page: Page,
   options: {
@@ -857,6 +1125,80 @@ export async function resolveSummonPlacement(
   }
 
   await expect(expectedCard).toBeVisible({ timeout: 1 });
+}
+
+export async function resolveSummonToAnyMainMonsterZone(
+  page: Page,
+  options: {
+    cardCode: number;
+    controller: string | number;
+    position?: string;
+  },
+) {
+  const deadline = Date.now() + 60000;
+  const expectedCard = duelCard(page, {
+    code: options.cardCode,
+    zone: "MZONE",
+    controller: options.controller,
+  }).first();
+
+  while (Date.now() < deadline) {
+    if (await expectedCard.isVisible()) {
+      const sequence = await expectedCard.getAttribute("data-card-sequence");
+      expect(
+        sequence,
+        "Expected summoned card to have a sequence.",
+      ).not.toBeNull();
+
+      return Number(sequence);
+    }
+
+    if (options.position) {
+      await choosePositionIfVisible(page, options.position);
+    }
+
+    const targetZone = page
+      .locator(
+        [
+          '[data-testid="duel-zone"]',
+          '[data-zone="MZONE"]',
+          '[data-place-selectable="true"]',
+        ].join(""),
+      )
+      .first();
+    if (await targetZone.isVisible()) {
+      await targetZone.click();
+    }
+
+    await page.waitForTimeout(250);
+  }
+
+  await expect(expectedCard).toBeVisible({ timeout: 1 });
+  const sequence = await expectedCard.getAttribute("data-card-sequence");
+  expect(sequence, "Expected summoned card to have a sequence.").not.toBeNull();
+
+  return Number(sequence);
+}
+
+export async function expectOverlayMaterialCount(
+  page: Page,
+  options: {
+    controller: string | number;
+    sequence: number;
+    count: number;
+  },
+) {
+  await expect(
+    page.locator(
+      [
+        '[data-testid="duel-card"]',
+        '[data-card-zone="MZONE"]',
+        `[data-card-controller="${options.controller}"]`,
+        `[data-card-sequence="${options.sequence}"]`,
+        '[data-card-is-overlay="true"]',
+      ].join(""),
+    ),
+  ).toHaveCount(options.count, { timeout: 60000 });
 }
 
 export async function waitForAnnounceCardModal(
@@ -969,8 +1311,24 @@ export async function announceCardBySearch(
 }
 
 export async function surrenderAndClosePage(page: Page) {
-  await page.getByTestId("duel-surrender").click();
-  await page.getByTestId("duel-surrender-confirm").click();
+  await page.keyboard.press("Escape");
+  await closeVisibleDrawer(page);
+
+  const surrender = page.getByTestId("duel-surrender");
+  const confirm = page.getByTestId("duel-surrender-confirm").last();
+
+  for (const _ of [0, 1, 2]) {
+    await surrender.click({ force: true });
+    if (await confirm.isVisible()) break;
+
+    await surrender.dispatchEvent("click");
+    if (await confirm.isVisible()) break;
+
+    await page.waitForTimeout(250);
+  }
+
+  await expect(confirm).toBeVisible({ timeout: 30000 });
+  await confirm.dispatchEvent("click");
 
   await expect(page.getByTestId("duel-end-modal")).toBeVisible({
     timeout: 60000,
@@ -978,6 +1336,15 @@ export async function surrenderAndClosePage(page: Page) {
   await expect(page.getByTestId("duel-end-result")).toHaveText(/Defeated|Win/);
 
   await page.close();
+}
+
+async function closeVisibleDrawer(page: Page) {
+  const close = page.locator(".ant-drawer-close:visible").last();
+
+  if (await close.isVisible()) {
+    await close.click({ force: true });
+    await page.waitForTimeout(250);
+  }
 }
 
 async function expectSelectedDeck(deckSelect: Locator) {
@@ -1023,6 +1390,77 @@ function activeSelectCardsModal(page: Page) {
       '[data-testid="duel-select-cards-modal"]:visible:not([data-select-max="0"])',
     )
     .last();
+}
+
+async function selectCardFromActiveModalIfVisible(
+  page: Page,
+  cardCode: number,
+  timeout = 5000,
+) {
+  const modal = activeSelectCardsModal(page);
+
+  try {
+    await expect(modal).toBeVisible({ timeout });
+  } catch {
+    return false;
+  }
+
+  const option = modal
+    .locator(
+      `[data-testid="duel-select-card-option"][data-card-code="${cardCode}"]`,
+    )
+    .first();
+
+  try {
+    await expect(option).toBeVisible({ timeout });
+  } catch {
+    return false;
+  }
+
+  if (await quickSelectSingleCardOptionIfAvailable(modal, option)) {
+    return true;
+  }
+
+  await chooseSelectCardOption(option);
+
+  const submit = page
+    .locator('[data-testid="duel-select-card-submit"]:visible:enabled')
+    .last();
+  await expect(submit).toBeEnabled({ timeout: 30000 });
+  await submit.click();
+
+  return true;
+}
+
+async function quickSelectSingleCardOptionIfAvailable(
+  modal: Locator,
+  option: Locator,
+) {
+  const [max, single] = await Promise.all([
+    modal.getAttribute("data-select-max"),
+    modal.getAttribute("data-select-single"),
+  ]);
+
+  if (max !== "1" && single !== "true") return false;
+
+  await expect(option).toBeVisible({ timeout: 30000 });
+  await option.dispatchEvent("dblclick");
+
+  return true;
+}
+
+async function chooseSelectCardOption(option: Locator) {
+  const input = option
+    .locator('input[type="checkbox"], input[type="radio"]')
+    .first();
+
+  if ((await input.count()) > 0) {
+    await input.check({ force: true });
+
+    return;
+  }
+
+  await option.click({ force: true });
 }
 
 function activeSelectChainModal(page: Page) {
