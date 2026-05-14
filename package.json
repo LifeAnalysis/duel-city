@@ -46,8 +46,8 @@
     "preview": "vite preview",
     "test:e2e": "PLAYWRIGHT_SKIP_WEB_SERVER=false playwright test",
     "test:e2e:headed": "PLAYWRIGHT_SKIP_WEB_SERVER=false playwright test --headed",
-    "test:e2e:live": "PLAYWRIGHT_SKIP_WEB_SERVER=false PLAYWRIGHT_LIVE=1 playwright test tests/e2e/live",
-    "test:e2e:live:headed": "PLAYWRIGHT_SKIP_WEB_SERVER=false PLAYWRIGHT_LIVE=1 playwright test tests/e2e/live --headed",
+    "test:e2e:live": "PLAYWRIGHT_SKIP_WEB_SERVER=false PLAYWRIGHT_LIVE=1 sh -c 'case \"$1\" in \"\"|--*) set -- tests/e2e/live \"$@\";; esac; playwright test \"$@\"' --",
+    "test:e2e:live:headed": "PLAYWRIGHT_SKIP_WEB_SERVER=false PLAYWRIGHT_LIVE=1 sh -c 'case \"$1\" in \"\"|--*) set -- tests/e2e/live \"$@\";; esac; playwright test \"$@\" --headed' --",
     "lint": "eslint --ext .ts --ext .tsx src",
     "fmt": "npx tsc && eslint --ext .ts --ext .tsx src --fix"
   },

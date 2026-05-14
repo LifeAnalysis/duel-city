@@ -4,7 +4,12 @@ import classnames from "classnames";
 import React, { type CSSProperties, useEffect, useRef, useState } from "react";
 import { useSnapshot } from "valtio";
 
-import { type CardMeta, Region, sendSelectMultiResponse } from "@/api";
+import {
+  type CardMeta,
+  Region,
+  sendSelectBattleCmdResponse,
+  sendSelectMultiResponse,
+} from "@/api";
 import {
   fetchStrings,
   getCardStr,
@@ -158,24 +163,36 @@ export const Card: React.FC<{ idx: number }> = React.memo(({ idx }) => {
     const nonEffectActions = actions.filter(
       ([action]) => action !== InteractType.ACTIVATE,
     );
-    const getNonEffectResponse = (action: InteractType, card: CardType) =>
-      card.idleInteractivities.find((item) => item.interactType === action)!
-        .response;
+    const getNonEffectInteractivity = (action: InteractType, card: CardType) =>
+      card.idleInteractivities.find((item) => item.interactType === action)!;
+    const sendInteractionResponse = (interactivity: Interactivity<number>) => {
+      if (interactivity.responseSource === "battle") {
+        sendSelectBattleCmdResponse(container.conn, interactivity.response);
+      } else {
+        sendSelectIdleCmdResponse(container.conn, interactivity.response);
+      }
+    };
     const nonEffectItem: DropdownItem[] = nonEffectActions.map(
       ([action, cards], key) => ({
         key,
         "data-testid": `duel-action-${InteractType[action].toLowerCase()}`,
         "data-action-type": InteractType[action],
+        "data-action-card-count": cards.length,
+        "data-action-response":
+          cards.length === 1
+            ? getNonEffectInteractivity(action, cards[0]).response
+            : undefined,
+        "data-action-response-source":
+          cards.length === 1
+            ? getNonEffectInteractivity(action, cards[0]).responseSource
+            : undefined,
         label: interactTypeToString(action),
         icon: interactTypeToIcon(action),
         onClick: async () => {
           if (!isField) {
             // 单卡: 直接召唤/特殊召唤/...
             const card = cards[0];
-            sendSelectIdleCmdResponse(
-              container.conn,
-              getNonEffectResponse(action, card),
-            );
+            sendInteractionResponse(getNonEffectInteractivity(action, card));
             clearAllIdleInteractivities();
           } else {
             // 场地: 选择卡片
@@ -184,11 +201,14 @@ export const Card: React.FC<{ idx: number }> = React.memo(({ idx }) => {
               selectables: cards.map((card) => ({
                 meta: card.meta,
                 location: card.location,
-                response: getNonEffectResponse(action, card),
+                response: getNonEffectInteractivity(action, card).response,
+                card,
               })),
             });
             if (option.length > 0) {
-              sendSelectIdleCmdResponse(container.conn, option[0].response!);
+              sendInteractionResponse(
+                getNonEffectInteractivity(action, option[0].card as CardType),
+              );
               clearAllIdleInteractivities();
             }
           }
@@ -247,6 +267,7 @@ export const Card: React.FC<{ idx: number }> = React.memo(({ idx }) => {
             .map((x) => ({
               desc: interactTypeToString(x.interactType),
               response: x.response,
+              responseSource: x.responseSource,
               effectCode: x.activateIndex,
             })),
           tmpCard.meta,
@@ -313,6 +334,21 @@ export const Card: React.FC<{ idx: number }> = React.memo(({ idx }) => {
   const idleActions = snap.idleInteractivities
     .map(({ interactType }) => InteractType[interactType])
     .join(" ");
+  const idleActionResponses = snap.idleInteractivities
+    .map(
+      ({ interactType, response }) =>
+        `${InteractType[interactType]}:${response}`,
+    )
+    .join(" ");
+  const idleActionSources = snap.idleInteractivities
+    .map(
+      ({ interactType, responseSource }) =>
+        `${InteractType[interactType]}:${responseSource ?? "idle"}`,
+    )
+    .join(" ");
+  const attackInteractivity = snap.idleInteractivities.find(
+    ({ interactType }) => interactType === InteractType.ATTACK,
+  );
 
   return (
     <animated.div
@@ -334,6 +370,9 @@ export const Card: React.FC<{ idx: number }> = React.memo(({ idx }) => {
       data-card-targeted={snap.targeted}
       data-card-disabled={disabled}
       data-card-idle-actions={idleActions}
+      data-card-idle-responses={idleActionResponses}
+      data-card-idle-response-sources={idleActionSources}
+      data-card-attack-directable={attackInteractivity?.directAttackAble}
       className={classnames(styles["mat-card"], {
         /* 有可操作选项或者已被选中*/
         [styles.glowing]: glowing || snap.selectInfo.selected,
@@ -392,6 +431,7 @@ export const Card: React.FC<{ idx: number }> = React.memo(({ idx }) => {
 interface Interactivy {
   desc: string;
   response: number;
+  responseSource?: "idle" | "battle";
   effectCode: number | undefined;
 }
 
@@ -409,7 +449,17 @@ const handleEffectActivation = (
   if (!effectInteractivies.length) return;
   else if (effectInteractivies.length === 1) {
     // 如果只有一个效果，点击直接触发
-    sendSelectIdleCmdResponse(container.conn, effectInteractivies[0].response);
+    if (effectInteractivies[0].responseSource === "battle") {
+      sendSelectBattleCmdResponse(
+        container.conn,
+        effectInteractivies[0].response,
+      );
+    } else {
+      sendSelectIdleCmdResponse(
+        container.conn,
+        effectInteractivies[0].response,
+      );
+    }
   } else {
     // optionsModal
     const options = effectInteractivies.map((effect) => {

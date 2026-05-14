@@ -37,6 +37,7 @@ export default async (
           target.idleInteractivities.push({
             ...tmp,
             interactType,
+            responseSource: "idle",
             response: data.response,
           });
         } else {

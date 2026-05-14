@@ -211,6 +211,43 @@ const smartChain = messages[language].smartChain ?? "Smart Chain";
 const unknown = messages[language].unknown;
 /* End of definition (I18N) */
 
+const phaseTestId = (phase: PhaseType) => {
+  switch (phase) {
+    case PhaseType.DRAW:
+      return "draw";
+    case PhaseType.STANDBY:
+      return "standby";
+    case PhaseType.MAIN1:
+      return "main1";
+    case PhaseType.BATTLE:
+      return "battle";
+    case PhaseType.BATTLE_START:
+      return "battle-start";
+    case PhaseType.BATTLE_STEP:
+      return "battle-step";
+    case PhaseType.DAMAGE:
+      return "damage";
+    case PhaseType.DAMAGE_GAL:
+      return "damage-calc";
+    case PhaseType.MAIN2:
+      return "main2";
+    case PhaseType.END:
+      return "end";
+    case PhaseType.UNKNOWN:
+    default:
+      return "unknown";
+  }
+};
+
+const isBattleCommandPhase = (phase: PhaseType) =>
+  [
+    PhaseType.BATTLE,
+    PhaseType.BATTLE_START,
+    PhaseType.BATTLE_STEP,
+    PhaseType.DAMAGE,
+    PhaseType.DAMAGE_GAL,
+  ].includes(phase);
+
 // PhaseType, 中文, response, 是否显示，是否禁用
 const initialPhaseBind: [
   phase: PhaseType,
@@ -289,17 +326,21 @@ export const Menu = () => {
         label,
         disabled: disabled,
         onClick: () => {
-          if (response === 2)
+          if (isBattleCommandPhase(currentPhase)) {
+            sendSelectBattleCmdResponse(container.conn, response);
+          } else {
             sendSelectIdleCmdResponse(container.conn, response);
-          else sendSelectBattleCmdResponse(container.conn, response);
+          }
           clearAllIdleInteractivities();
         },
+        "data-testid": `duel-phase-${phaseTestId(phase)}`,
+        "data-phase": phaseTestId(phase),
         icon: disabled ? <CheckOutlined /> : <ArrowRightOutlined />,
         danger: phase === PhaseType.END,
       }));
 
     setPhaseSwitchItems(newPhaseSwitchItems);
-  }, [phaseBind]);
+  }, [container.conn, currentPhase, phaseBind]);
 
   const chainSettingTexts = [
     [ChainSetting.CHAIN_ALL, allChain],
@@ -355,6 +396,8 @@ export const Menu = () => {
         disabled={globalDisable}
       >
         <Button
+          data-testid="duel-phase-select"
+          data-current-phase={phaseTestId(currentPhase)}
           icon={<StepForwardFilled style={{ transform: "scale(1.5)" }} />}
           type="text"
           disabled={globalDisable}

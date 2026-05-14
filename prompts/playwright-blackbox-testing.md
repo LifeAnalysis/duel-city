@@ -285,6 +285,10 @@ tests/e2e/
   live/
     room-smoke.spec.ts
     announce-card.spec.ts
+    announce-number.spec.ts
+    select-battle-cmd.spec.ts
+    select-chain.spec.ts
+    select-idle-cmd.spec.ts
     select-card-fusion.spec.ts
     select-card-reborn.spec.ts
     select-card-tribute.spec.ts
@@ -320,6 +324,14 @@ npm run test:e2e:live
 ```bash
 npm run test:e2e:live:headed
 ```
+
+运行单个 live case：
+
+```bash
+npm run test:e2e:live:headed -- tests/e2e/live/announce-number.spec.ts --project=chrome
+```
+
+live 脚本在没有传入路径时默认运行 `tests/e2e/live`；传入 spec 路径时只运行该 spec，避免“目录 + 单文件”同时命中导致其他 case 先运行。
 
 也可以显式使用环境变量：
 
@@ -365,33 +377,39 @@ await surrenderAndClosePage(page);
 
 当前已落地并验证过的 live 交互场景：
 
-| spec                          | 覆盖点                                   | 关键卡组                             |
-| ----------------------------- | ---------------------------------------- | ------------------------------------ |
-| `room-smoke.spec.ts`          | 建房、AI 入场、猜拳、进入 Duel、投降清理 | 现有默认卡组                         |
-| `select-place.spec.ts`        | 普通召唤时选择 MZONE                     | `select-place.ydk`                   |
-| `select-card-reborn.spec.ts`  | 从卡组选择怪兽送墓                       | `select-card-reborn.ydk`             |
-| `select-card-tribute.spec.ts` | 上级召唤选择解放素材                     | `select-card-tribute.ydk`            |
-| `select-card-fusion.spec.ts`  | 融合召唤选择融合素材                     | `select-card-fusion.ydk`             |
-| `select-position.spec.ts`     | 特殊召唤选择表示形式和放置区域           | `select-position-cyber-dragon.ydk`   |
-| `select-option.spec.ts`       | 多效果选项弹窗                           | `select-option-enemy-controller.ydk` |
-| `select-yesno.spec.ts`        | 可选诱发效果 yes/no 弹窗                 | `select-yesno-sangan.ydk`            |
-| `announce-card.spec.ts`       | 卡名宣言搜索和选择                       | `announce-card.ydk`                  |
+| spec                          | 覆盖点                                   | 关键卡组                              |
+| ----------------------------- | ---------------------------------------- | ------------------------------------- |
+| `room-smoke.spec.ts`          | 建房、AI 入场、猜拳、进入 Duel、投降清理 | 现有默认卡组                          |
+| `select-idle-cmd.spec.ts`     | 主要阶段可操作命令、通常召唤响应         | `select-idle-cmd-basic.ydk`           |
+| `select-battle-cmd.spec.ts`   | 战斗阶段攻击命令、battle 响应和 LP 变化  | `select-battle-cmd-direct-attack.ydk` |
+| `select-place.spec.ts`        | 普通召唤时选择 MZONE                     | `select-place.ydk`                    |
+| `select-card-reborn.spec.ts`  | 从卡组选择怪兽送墓                       | `select-card-reborn.ydk`              |
+| `select-card-tribute.spec.ts` | 上级召唤选择解放素材                     | `select-card-tribute.ydk`             |
+| `select-card-fusion.spec.ts`  | 融合召唤选择融合素材                     | `select-card-fusion.ydk`              |
+| `select-chain.spec.ts`        | 多个可选连锁候选、连续连锁和连锁标记     | `select-chain-free-chain-traps.ydk`   |
+| `select-position.spec.ts`     | 特殊召唤选择表示形式和放置区域           | `select-position-cyber-dragon.ydk`    |
+| `select-option.spec.ts`       | 多效果选项弹窗                           | `select-option-enemy-controller.ydk`  |
+| `select-yesno.spec.ts`        | 可选诱发效果 yes/no 弹窗                 | `select-yesno-sangan.ydk`             |
+| `announce-card.spec.ts`       | 卡名宣言搜索和选择                       | `announce-card.ydk`                   |
+| `announce-number.spec.ts`     | 数字宣言弹窗，选择两个数字               | `announce-number-sixth-sense.ydk`     |
 
 当前尚未落地的场景：
 
-- `select_chain`：需要一个能稳定产生连锁选择列表的专用卡组。Tour Guide 这类场景实际走 `select_effect_yn`，不能当作 `select_chain` 覆盖。
-- `announce_number`：需要找到稳定要求我方宣言数字的卡片场景。`Reasoning` 通常要求对方宣言等级，不适合作为我方 Playwright 交互 case。
 - 链接召唤素材选择：需要确认额外卡组可操作入口和素材选择 UI 的稳定 DOM 路径，再单独补 `select-card-link` case。
 
 为了支持这类断言，Duel DOM 暴露以下 live 交互测试属性：
 
-- `data-card-idle-actions`：当前卡牌可执行的 idle action，例如 `SUMMON`。
-- `data-testid="duel-action-<action>"`：卡牌动作菜单项，例如 `duel-action-summon`。
+- `data-card-idle-actions`：当前卡牌可执行的 action，例如 `SUMMON`、`ATTACK`。
+- `data-card-idle-responses` / `data-card-idle-response-sources`：当前 action 对应的 response 与来源，来源可为 `idle` 或 `battle`。
+- `data-card-attack-directable`：`select_battle_cmd` 中攻击命令是否可直接攻击。
+- `data-testid="duel-action-<action>"`：卡牌动作菜单项，例如 `duel-action-summon`、`duel-action-attack`，包含 `data-action-response-source`。
 - `data-testid="duel-zone"`：场地区块。
 - `data-zone`、`data-controller`、`data-sequence`：场地区块语义位置。
 - `data-place-selectable`：当前格子是否可作为 `select_place` 响应目标。
 - `data-testid="duel-chain-setting"` / `duel-chain-setting-ignore`：连锁开关。常规 case 默认切到 ignore，专门测试连锁时再切回 all。
-- `data-testid="duel-select-card-option"`：弹窗内的卡片选择项，包含 `data-card-code`、`data-card-controller`、`data-card-zone-value`、`data-card-sequence`。
+- `data-testid="duel-phase-select"` / `duel-phase-end`：阶段切换入口和阶段项，用于需要过回合或切阶段的 live case。
+- `data-testid="duel-select-cards-modal"`：卡片/连锁选择弹窗，包含 `data-select-min`、`data-select-max`、`data-select-is-chain`、`data-select-cancelable`。
+- `data-testid="duel-select-card-option"`：弹窗内的卡片选择项，包含 `data-card-code`、`data-card-controller`、`data-card-zone`、`data-card-zone-value`、`data-card-sequence`、`data-card-response`。
 - `data-testid="duel-option-modal"` / `duel-option-item`：选项弹窗和选项项。
 - `data-testid="duel-position-modal"` / `duel-position-option`：表示形式弹窗和选项项。
 - `data-testid="duel-yesno-yes"` / `duel-yesno-no`：yes/no 弹窗按钮。
@@ -412,6 +430,10 @@ await surrenderAndClosePage(page);
 ```text
 tests/e2e/fixtures/live/decks/
   announce-card.ydk
+  announce-number-sixth-sense.ydk
+  select-battle-cmd-direct-attack.ydk
+  select-chain-free-chain-traps.ydk
+  select-idle-cmd-basic.ydk
   select-card-fusion.ydk
   select-card-reborn.ydk
   select-card-tribute.ydk

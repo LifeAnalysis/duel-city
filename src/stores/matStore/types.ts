@@ -63,6 +63,7 @@ export interface InitInfo {
 
 export interface Interactivity<T> {
   interactType: InteractType;
+  responseSource?: "idle" | "battle";
   // 如果`interactType`是`ACTIVATE`，这个字段是对应的效果编号
   activateIndex?: number;
   // 如果`interactType`是`ATTACK`，这个字段表示是否可以直接攻击
