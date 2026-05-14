@@ -11,6 +11,9 @@ tests/e2e/fixtures/live/decks/
   announce-number-sixth-sense.ydk
   select-battle-cmd-direct-attack.ydk
   select-chain-free-chain-traps.ydk
+  select-card-link.ydk
+  select-card-synchro.ydk
+  select-card-xyz.ydk
   select-idle-cmd-basic.ydk
   select-position.ydk
   select-place.ydk
@@ -48,3 +51,17 @@ normal summonable monster with an unconditional direct attack effect and
 non-zero ATK. The related test goes second, enters battle phase, asserts the
 attack action comes from `select_battle_cmd`, confirms direct attack, then
 verifies opponent LP drops.
+
+`select-card-link.ydk` opens repeated `Mystical Elf` (`15025844`) and
+`Link Spider` (`98978921`) in the Extra Deck. The related test selects
+the field-selectable `Mystical Elf` as link material, summons `Link Spider`,
+and asserts the link monster is on the field.
+
+`select-card-xyz.ydk` uses the same three level 4 candidate monsters, then xyz
+summons `Number 39: Utopia` (`84013237`) and asserts the summoned monster plus
+two visible overlay materials.
+
+`select-card-synchro.ydk` opens `Photon Thrasher` (`65367484`), `Double Summon`
+(`43422537`), `Angel Trumpeter` (`87979586`), and `Mystical Elf` (`15025844`).
+The related test opens `Stardust Dragon` (`44508094`) from the Extra Deck and
+selects `Angel Trumpeter` and then `Photon Thrasher` as synchro materials.

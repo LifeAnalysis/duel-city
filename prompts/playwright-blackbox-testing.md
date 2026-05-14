@@ -290,8 +290,11 @@ tests/e2e/
     select-chain.spec.ts
     select-idle-cmd.spec.ts
     select-card-fusion.spec.ts
+    select-card-link.spec.ts
     select-card-reborn.spec.ts
+    select-card-synchro.spec.ts
     select-card-tribute.spec.ts
+    select-card-xyz.spec.ts
     select-option.spec.ts
     select-position.spec.ts
     select-place.spec.ts
@@ -386,6 +389,9 @@ await surrenderAndClosePage(page);
 | `select-card-reborn.spec.ts`  | 从卡组选择怪兽送墓                       | `select-card-reborn.ydk`              |
 | `select-card-tribute.spec.ts` | 上级召唤选择解放素材                     | `select-card-tribute.ydk`             |
 | `select-card-fusion.spec.ts`  | 融合召唤选择融合素材                     | `select-card-fusion.ydk`              |
+| `select-card-link.spec.ts`    | 链接召唤素材选择和落场                   | `select-card-link.ydk`                |
+| `select-card-xyz.spec.ts`     | 超量召唤选择素材、放置和 overlay DOM     | `select-card-xyz.ydk`                 |
+| `select-card-synchro.spec.ts` | 同调召唤等级合计素材选择和落场           | `select-card-synchro.ydk`             |
 | `select-chain.spec.ts`        | 多个可选连锁候选、连续连锁和连锁标记     | `select-chain-free-chain-traps.ydk`   |
 | `select-position.spec.ts`     | 特殊召唤选择表示形式和放置区域           | `select-position-cyber-dragon.ydk`    |
 | `select-option.spec.ts`       | 多效果选项弹窗                           | `select-option-enemy-controller.ydk`  |
@@ -393,9 +399,7 @@ await surrenderAndClosePage(page);
 | `announce-card.spec.ts`       | 卡名宣言搜索和选择                       | `announce-card.ydk`                   |
 | `announce-number.spec.ts`     | 数字宣言弹窗，选择两个数字               | `announce-number-sixth-sense.ydk`     |
 
-当前尚未落地的场景：
-
-- 链接召唤素材选择：需要确认额外卡组可操作入口和素材选择 UI 的稳定 DOM 路径，再单独补 `select-card-link` case。
+链接、超量、同调这三类额外卡组召唤 case 使用固定小卡组，并都会继续完成召唤，从实际落场 DOM 读取 sequence 做后续断言。链接素材选择是场上卡牌 `data-card-selectable="true"` 的直接选择；超量额外断言 overlay material DOM 数量；同调会按 server 提示分两段选择调整怪兽和非调整怪兽，避免误命中额外卡组候选弹窗。
 
 为了支持这类断言，Duel DOM 暴露以下 live 交互测试属性：
 
@@ -435,8 +439,11 @@ tests/e2e/fixtures/live/decks/
   select-chain-free-chain-traps.ydk
   select-idle-cmd-basic.ydk
   select-card-fusion.ydk
+  select-card-link.ydk
   select-card-reborn.ydk
+  select-card-synchro.ydk
   select-card-tribute.ydk
+  select-card-xyz.ydk
   select-option-enemy-controller.ydk
   select-position-cyber-dragon.ydk
   select-place.ydk
