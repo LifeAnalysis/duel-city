@@ -90,6 +90,9 @@ const LifeBarItem: React.FC<{
       : `${mm < 10 ? "0" + mm : mm}:${ss < 10 ? "0" + ss : ss}`;
   return (
     <div
+      data-testid="duel-player-life"
+      data-player={isMe ? "me" : "op"}
+      data-life={life}
       style={{
         flexDirection: isMe ? "column-reverse" : "column",
         overflow: "hidden",

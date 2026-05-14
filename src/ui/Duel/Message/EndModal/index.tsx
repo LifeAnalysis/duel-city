@@ -71,9 +71,14 @@ export const EndModal: React.FC = () => {
       }}
       onCancel={onReturn}
     >
-      <div className={styles["end-container"]}>
+      <div
+        className={styles["end-container"]}
+        data-testid="duel-end-modal"
+        data-duel-result={isWin ? "win" : "defeated"}
+      >
         <p
           className={styles.result}
+          data-testid="duel-end-result"
           style={{ "--text-color": isWin ? "blue" : "red" } as CSSProperties}
         >
           {isWin ? "Win" : "Defeated"}

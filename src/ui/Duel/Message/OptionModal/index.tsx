@@ -66,42 +66,53 @@ export const OptionModal = () => {
       title={title}
       open={isOpen}
       footer={
-        <Button disabled={selecteds.flat().length !== min} onClick={onSummit}>
+        <Button
+          data-testid="duel-option-submit"
+          disabled={selecteds.flat().length !== min}
+          onClick={onSummit}
+        >
           确定
         </Button>
       }
     >
-      <Selector page={page} maxPage={maxPage} onChange={setPage as any} />
-      {grouped.map(
-        (options, i) =>
-          i === page && (
-            <div className={styles.container} key={i}>
-              <CheckCard.Group
-                bordered
-                multiple
-                value={selecteds[i]}
-                className={styles["check-card-group"]}
-                onChange={(values: any) => {
-                  const v = selecteds.map((x, i) => (i === page ? values : x));
-                  setSelecteds(v);
-                }}
-              >
-                {options.map((option, idx) => (
-                  <div
-                    key={idx}
-                    onDoubleClick={() => onQuickSelect(option.response)}
-                  >
-                    <CheckCard
-                      className={styles["check-card"]}
-                      description={option.info}
-                      value={option.response}
-                    />
-                  </div>
-                ))}
-              </CheckCard.Group>
-            </div>
-          ),
-      )}
+      <div data-testid="duel-option-modal" data-option-min={min}>
+        <Selector page={page} maxPage={maxPage} onChange={setPage as any} />
+        {grouped.map(
+          (options, i) =>
+            i === page && (
+              <div className={styles.container} key={i}>
+                <CheckCard.Group
+                  bordered
+                  multiple
+                  value={selecteds[i]}
+                  className={styles["check-card-group"]}
+                  onChange={(values: any) => {
+                    const v = selecteds.map((x, i) =>
+                      i === page ? values : x,
+                    );
+                    setSelecteds(v);
+                  }}
+                >
+                  {options.map((option, idx) => (
+                    <div
+                      key={idx}
+                      data-testid="duel-option-item"
+                      data-option-response={option.response}
+                      data-option-text={option.info}
+                      onDoubleClick={() => onQuickSelect(option.response)}
+                    >
+                      <CheckCard
+                        className={styles["check-card"]}
+                        description={option.info}
+                        value={option.response}
+                      />
+                    </div>
+                  ))}
+                </CheckCard.Group>
+              </div>
+            ),
+        )}
+      </div>
     </NeosModal>
   );
 };

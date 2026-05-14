@@ -108,7 +108,11 @@ export const MatchModal: React.FC = ({}) => {
       title={i18n("PleaseEnterCustomRoomInformation")}
       onCancel={() => (matchStore.open = false)}
       footer={
-        <Button onClick={handleSubmit} loading={confirmLoading}>
+        <Button
+          data-testid="match-modal-join"
+          onClick={handleSubmit}
+          loading={confirmLoading}
+        >
           {i18n("JoinRoom")}
         </Button>
       }
@@ -146,6 +150,7 @@ export const MatchModal: React.FC = ({}) => {
         </div>
         <Input
           className={styles.input}
+          data-testid="match-modal-player"
           type="text"
           placeholder={i18n("PlayerNickname")}
           value={player}
@@ -154,6 +159,7 @@ export const MatchModal: React.FC = ({}) => {
         />
         <Input
           className={styles.input}
+          data-testid="match-modal-password"
           type="text"
           autoCorrect="off"
           placeholder={i18n("RoomPasswordOptional")}

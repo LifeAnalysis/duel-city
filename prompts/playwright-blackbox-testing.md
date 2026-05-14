@@ -89,7 +89,7 @@ ReplayAdvanceFlag.MOVE | ReplayAdvanceFlag.DRAW | ReplayAdvanceFlag.WIN;
 
 当测试只关心卡牌移动、抽卡和结算时，可以用这个 mask 跳过其他关键消息。默认 mask 不包含 `UPDATE_DATA`，因为它通常只是同步卡牌数据，出现频率很高，不适合作为自动断言 checkpoint。
 
-`collectReplayExpected(page)` 默认使用更窄的 expected 生成 mask：它只停在更可能影响卡牌 DOM 或连锁标记的消息上，例如 `DRAW`、`MOVE`、`SET`、召唤、连锁、`POS_CHANGE`、`BECOME_TARGET`、`RELOAD_FIELD`、洗牌、计数器和 `WIN`。阶段变化、LP 变化、攻击宣言这类当前 expected 不断言的 UI 状态不会作为默认 checkpoint。
+`collectReplayExpected(page)` 默认使用更窄的 expected 生成 mask：它只停在更可能影响卡牌 DOM、生命值或连锁标记的消息上，例如 `DRAW`、`MOVE`、`SET`、召唤、连锁、`POS_CHANGE`、`UPDATE_HP`、`BECOME_TARGET`、`RELOAD_FIELD`、洗牌、计数器和 `WIN`。阶段变化、攻击宣言这类当前 expected 不断言的 UI 状态不会作为默认 checkpoint。
 
 ## Expected JSON
 
@@ -101,7 +101,7 @@ tests/e2e/fixtures/replays/<case-name>/
   expected.json
 ```
 
-`tests/e2e/replay.spec.ts` 会在启动时扫描 `tests/e2e/fixtures/replays/*`，对每个同时包含 `replay.yrp3d` 和 `expected.json` 的目录生成一个 Playwright 测试。`UPDATE_EXPECTED=1` 时，目录里只要有 `replay.yrp3d` 就会生成或更新 `expected.json`。目录名会进入测试名，建议使用稳定、可读的 kebab-case，例如 `minimal-duel`、`dragon-combo-win`。
+`tests/e2e/replay.spec.ts` 会在启动时扫描 `tests/e2e/fixtures/replays/*`，对每个同时包含 `replay.yrp3d` 和 `expected.json` 的目录生成一个 Playwright 测试。`UPDATE_EXPECTED=1` 时，目录里只要有 `replay.yrp3d` 就会生成或更新 `expected.json`。目录名会进入测试名，建议使用稳定的序号或可读名称，例如 `1`、`2`、`minimal-duel`。
 
 `expected.json` 描述的是 Playwright 能从页面 DOM 观察到的对局状态，不是 `matStore`、`cardStore` 或其他内部 store 的快照。
 
@@ -152,6 +152,16 @@ tests/e2e/fixtures/replays/<case-name>/
           "count": 9
         }
       ],
+      "lifePoints": [
+        {
+          "player": "op",
+          "life": 8000
+        },
+        {
+          "player": "me",
+          "life": 8000
+        }
+      ],
       "chainMarkers": [
         {
           "index": 1,
@@ -173,6 +183,7 @@ tests/e2e/fixtures/replays/<case-name>/
 - `cards`：当前 DOM 中需要逐张断言的 `[data-testid="duel-card"]` 完整语义快照，默认精确匹配；不包含 `DECK`、`EXTRA`、`TZONE` 区域。
 - `deckCounts`：当前 DOM 中 `DECK` 区域的剩余卡组数量，只按 `controller` 记录数量，不记录卡组内每张卡的 `code`、位置、状态或顺序。
 - `extraCounts`：当前 DOM 中 `EXTRA` 区域的剩余额外卡组数量，只按 `controller` 记录数量，不记录额外卡组内每张卡的 `code`、位置、状态或顺序。
+- `lifePoints`：当前 DOM 中双方玩家的生命值，来自 `[data-testid="duel-player-life"]`；`player = "op"` 表示上方对手生命条，`player = "me"` 表示下方己方生命条。
 - `chainMarkers`：当前 DOM 中所有 `[data-testid="duel-chain-marker"]` 的可见连锁数字标记，默认精确匹配。
 
 `cards` 不应包含 `uuid`。`data-card-uuid` 是运行时实例标识，不适合作为稳定 expected。
@@ -218,6 +229,199 @@ npm run test:e2e -- --project=chrome --grep "external yrp3d"
 ```
 
 自动生成的 expected 代表“当前实现的可观察行为”。第一次生成后仍然需要 review `expected.json` diff，确认它没有把已有 bug 记录成基准。
+
+## 交互测试场景基准
+
+Replay 黑盒测试主要覆盖 `STOC_GAME_MSG -> Neos 处理 -> DOM 状态`。它不会覆盖需要玩家输入的交互链路，因为 `.yrp3d` 回放不会真正等待玩家选择，也不会把玩家点击转换成发回服务器的响应。
+
+后续 live 交互黑盒测试应连接真实 ygopro server，通过 Playwright 像真实用户一样点击 UI，并从用户可见结果断言流程是否顺利继续。测试不需要断言 CTOS payload 的 byte 级内容；真实 server 接受响应并继续推进对局，本身就是黑盒结果的一部分。
+
+以下 `select_xxx` / `announce_xxx` 消息可以作为交互测试的基准场景：
+
+| MSG               | 游戏场景                                                                                                                                   |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| `select_card`     | 选择一张或多张已有卡。典型场景包括选择效果对象、选择要解放的怪兽、选择召唤素材、选择要加入手牌的卡、选择要丢弃的手牌、选择墓地中的卡等。   |
+| `select_chain`    | 选择是否发动可连锁效果，以及发动哪一个。典型场景包括对方发动魔法后是否连锁陷阱、怪兽召唤成功后是否发动诱发效果、多个可发动效果中选择一个。 |
+| `select_place`    | 选择一个空区域位置。典型场景包括特殊召唤到哪个怪兽区、盖放到哪个魔陷区、放置灵摆刻度、放置 token、选择要占用的格子。                       |
+| `select_option`   | 从若干文字选项中选择一个。典型场景包括效果有多个模式时选择其中一项，例如破坏一张卡、抽一张卡，或选择适用哪个效果。                         |
+| `select_position` | 选择表示形式。典型场景包括特殊召唤时选择攻击表示或防守表示，或某些效果要求玩家选择怪兽变成哪种表示形式。                                   |
+| `select_yesno`    | 是/否选择。典型场景包括是否发动可选效果、是否支付 cost、是否继续攻击、是否使用墓地效果。                                                   |
+| `announce_card`   | 宣言一个卡名。典型场景包括《禁止令》《心灵崩坏》这类要求玩家从卡片数据库中声明 card code 的效果。                                          |
+| `announce_number` | 宣言或选择一个数字。典型场景包括选择等级、宣言数字、选择效果要求的数量，或与掷骰、数量相关的效果。                                         |
+
+这类 live 测试的断言重点是：
+
+- 对应选择 UI 是否出现。
+- Playwright 是否能点击目标卡牌、格子、按钮或选项。
+- 点击后选择 UI 是否关闭。
+- 对局是否继续推进，没有卡在等待选择。
+- 后续 DOM 是否到达预期状态，例如卡牌移动、召唤成功、连锁结算、LP 或胜负结果变化。
+
+为了让真实 server 测试稳定，优先使用自定义房间、固定测试卡组、固定卡组顺序、不洗切手牌、禁用 deck check 或使用测试专用规则，并尽量让每个 case 只覆盖一个主要交互场景。
+
+自定义房间可以使用房间代码稳定测试条件：
+
+- `AI`：创建房间时自动加入 AI。
+- `SS`：创建后自动推进到猜拳相关流程。
+- `NS` / `NOSHUFFLE`：不洗切手牌，让起手和抽牌顺序可预测。
+- `NC` / `NOCHECK`：不检查卡组，便于使用测试专用卡组。
+- `TIME0`：不限时，避免调试或 CI 运行较慢时因为倒计时影响结果。
+
+Koishi server 不一定支持在聊天框通过 `/ai <name>` 召唤任意 AI。当前 live smoke 使用房间密码直接触发 AI：
+
+```text
+AI,SS,NS,NC#有栖川蓝子
+```
+
+这样 server 会自动加入名字包含“蓝子”的 AI，并进入猜拳阶段。当前公共 helper 默认选择 `rock`，如果获得先后攻选择权则选择先攻；需要让 AI 先攻的 case 可以显式传入 `tp: "second"`。结合 `NS` 固定卡组顺序后，live 交互测试的初始手牌、抽牌和对手行为都更容易稳定复现。
+
+### Live 测试代码组织
+
+Live 交互测试和 replay 测试分开组织：
+
+```text
+tests/e2e/
+  replay.spec.ts
+  live/
+    room-smoke.spec.ts
+    announce-card.spec.ts
+    select-card-fusion.spec.ts
+    select-card-reborn.spec.ts
+    select-card-tribute.spec.ts
+    select-option.spec.ts
+    select-position.spec.ts
+    select-place.spec.ts
+    select-yesno.spec.ts
+  helpers/
+    replay.ts
+    live.ts
+  fixtures/
+    replays/
+    live/
+      decks/
+```
+
+约定：
+
+- `tests/e2e/replay.spec.ts` 只覆盖离线 `.yrp3d` replay。
+- `tests/e2e/live/*.spec.ts` 连接真实 ygopro server，覆盖真实用户交互。
+- `tests/e2e/helpers/live.ts` 只沉淀公共页面动作，例如建房、等待自动 AI、猜拳、选择先后攻、等待进入 Duel、投降并关闭页面。
+- 各 live case 的具体流程和断言直接写在 spec 文件里，不设计 `case.json`。这些交互场景差异很大，用 JSON DSL 会降低可读性并增加维护成本。
+- 后续 live 测试设计如果发生变化，应同步更新本文档，让测试约定和实现保持一致。
+
+Live 测试默认不随普通 e2e 运行，避免真实 server、网络和 bot 状态影响离线回归。运行方式：
+
+```bash
+npm run test:e2e:live
+```
+
+展示浏览器 UI：
+
+```bash
+npm run test:e2e:live:headed
+```
+
+也可以显式使用环境变量：
+
+```bash
+PLAYWRIGHT_LIVE=1 npm run test:e2e -- tests/e2e/live
+```
+
+`PLAYWRIGHT_LIVE=1` 时 Playwright 固定使用 1 个 worker。真实 server 测试会使用固定 AI 房间密码，不能并发跑，否则不同 case 可能互相抢占房间或影响先后攻流程。
+
+当前已落地的 smoke 流程：
+
+1. 打开 `/match`。
+2. 进入普通自定义房间入口。
+3. 使用 `AI,SS,NS,NC#有栖川蓝子` 创建 AI 自定义房间。
+4. 进入等待房间。
+5. 等名字包含“蓝子”的 AI 出现在对手位置。
+6. 进入猜拳阶段后选择 `paper`。
+7. 如果获得先后攻选择权，则选择先攻。
+8. 断言进入 `/duel` 并渲染出 Duel 卡牌 DOM。
+9. 点击投降，断言结算弹窗出现，再关闭页面。
+
+注意测试昵称要保持较短。真实 server 会截断过长昵称，导致等待房间里展示的玩家名和测试输入不完全一致。
+
+Live 测试应优先使用公共 helper 优雅退出真实对局：
+
+```ts
+await surrenderAndClosePage(page);
+```
+
+该 helper 会点击投降、确认投降、等待 `duel-end-modal` 出现，并关闭当前页面。这样比直接让测试结束或关闭浏览器更干净，可以减少真实 server 上残留房间或异常断线。
+
+当前已落地的 `select_place` 流程：
+
+1. 在浏览器 IndexedDB 中只安装 `tests/e2e/fixtures/live/decks/select-place.ydk`。
+2. 该卡组使用重复的 `Mystical Elf`（`15025844`），保证起手有可普通召唤、无额外效果分支的怪兽。
+3. 使用 `AI,SS,NS,NC#有栖川蓝子` 进入 AI 对局，并选择先攻。
+4. 等待手牌中的 `Mystical Elf` 出现 `data-card-idle-actions~="SUMMON"`。
+5. 点击该手牌卡，点击 `duel-action-summon`。
+6. 等待目标 MZONE 出现 `data-place-selectable="true"`。
+7. 点击指定 MZONE。
+8. 断言 `Mystical Elf` 出现在该 `MZONE` 的指定 `sequence`。
+9. 调用 `surrenderAndClosePage(page)` 清理真实对局。
+
+当前已落地并验证过的 live 交互场景：
+
+| spec                          | 覆盖点                                   | 关键卡组                             |
+| ----------------------------- | ---------------------------------------- | ------------------------------------ |
+| `room-smoke.spec.ts`          | 建房、AI 入场、猜拳、进入 Duel、投降清理 | 现有默认卡组                         |
+| `select-place.spec.ts`        | 普通召唤时选择 MZONE                     | `select-place.ydk`                   |
+| `select-card-reborn.spec.ts`  | 从卡组选择怪兽送墓                       | `select-card-reborn.ydk`             |
+| `select-card-tribute.spec.ts` | 上级召唤选择解放素材                     | `select-card-tribute.ydk`            |
+| `select-card-fusion.spec.ts`  | 融合召唤选择融合素材                     | `select-card-fusion.ydk`             |
+| `select-position.spec.ts`     | 特殊召唤选择表示形式和放置区域           | `select-position-cyber-dragon.ydk`   |
+| `select-option.spec.ts`       | 多效果选项弹窗                           | `select-option-enemy-controller.ydk` |
+| `select-yesno.spec.ts`        | 可选诱发效果 yes/no 弹窗                 | `select-yesno-sangan.ydk`            |
+| `announce-card.spec.ts`       | 卡名宣言搜索和选择                       | `announce-card.ydk`                  |
+
+当前尚未落地的场景：
+
+- `select_chain`：需要一个能稳定产生连锁选择列表的专用卡组。Tour Guide 这类场景实际走 `select_effect_yn`，不能当作 `select_chain` 覆盖。
+- `announce_number`：需要找到稳定要求我方宣言数字的卡片场景。`Reasoning` 通常要求对方宣言等级，不适合作为我方 Playwright 交互 case。
+- 链接召唤素材选择：需要确认额外卡组可操作入口和素材选择 UI 的稳定 DOM 路径，再单独补 `select-card-link` case。
+
+为了支持这类断言，Duel DOM 暴露以下 live 交互测试属性：
+
+- `data-card-idle-actions`：当前卡牌可执行的 idle action，例如 `SUMMON`。
+- `data-testid="duel-action-<action>"`：卡牌动作菜单项，例如 `duel-action-summon`。
+- `data-testid="duel-zone"`：场地区块。
+- `data-zone`、`data-controller`、`data-sequence`：场地区块语义位置。
+- `data-place-selectable`：当前格子是否可作为 `select_place` 响应目标。
+- `data-testid="duel-chain-setting"` / `duel-chain-setting-ignore`：连锁开关。常规 case 默认切到 ignore，专门测试连锁时再切回 all。
+- `data-testid="duel-select-card-option"`：弹窗内的卡片选择项，包含 `data-card-code`、`data-card-controller`、`data-card-zone-value`、`data-card-sequence`。
+- `data-testid="duel-option-modal"` / `duel-option-item`：选项弹窗和选项项。
+- `data-testid="duel-position-modal"` / `duel-position-option`：表示形式弹窗和选项项。
+- `data-testid="duel-yesno-yes"` / `duel-yesno-no`：yes/no 弹窗按钮。
+- `data-testid="duel-announce-*"`：卡名宣言弹窗、搜索框、搜索按钮、结果项和确认按钮。
+
+### Live 测试卡组组织
+
+交互测试卡组应按“触发场景”设计，而不是按正常构筑设计。配合 `NC` 和 `NS`，测试卡组可以规避卡组张数、禁限表和洗牌随机性：
+
+- 卡组尽量小，只包含触发目标交互所需的关键卡。
+- 卡序固定，让起手和抽牌可预测。
+- 效果尽量简单，避免复杂裁定或额外分支。
+- 每个卡组服务一个主要交互场景。
+- spec 文件顶部说明该卡组的意图、关键起手和预期触发窗口。
+
+建议目录：
+
+```text
+tests/e2e/fixtures/live/decks/
+  announce-card.ydk
+  select-card-fusion.ydk
+  select-card-reborn.ydk
+  select-card-tribute.ydk
+  select-option-enemy-controller.ydk
+  select-position-cyber-dragon.ydk
+  select-place.ydk
+  select-yesno-sangan.ydk
+```
+
+公共 helper `installOnlyLiveDeck(page, deck)` 会先打开一个空白同源 seed 页面写入 IndexedDB，再进入真实应用页面。这样可以避开首页初始化预设卡组和测试写入卡组之间的竞态，确保 `/match` 和 `/waitroom` 读到的是测试卡组。
 
 ## 黑盒边界
 
@@ -303,7 +507,7 @@ npm run test:e2e:headed
 当前 Playwright project 使用本机 Chrome：
 
 ```ts
-channel: "chrome"
+channel: "chrome";
 ```
 
 这样可以避免额外下载 Playwright 自带浏览器。运行机器需要已经安装 Google Chrome。

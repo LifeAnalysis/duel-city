@@ -164,6 +164,8 @@ export const Card: React.FC<{ idx: number }> = React.memo(({ idx }) => {
     const nonEffectItem: DropdownItem[] = nonEffectActions.map(
       ([action, cards], key) => ({
         key,
+        "data-testid": `duel-action-${InteractType[action].toLowerCase()}`,
+        "data-action-type": InteractType[action],
         label: interactTypeToString(action),
         icon: interactTypeToIcon(action),
         onClick: async () => {
@@ -205,6 +207,8 @@ export const Card: React.FC<{ idx: number }> = React.memo(({ idx }) => {
       ).length > 0;
     const effectItem: DropdownItem = {
       key: nonEffectItem.length,
+      "data-testid": "duel-action-activate",
+      "data-action-type": InteractType[InteractType.ACTIVATE],
       label: interactTypeToString(InteractType.ACTIVATE),
       icon: interactTypeToIcon(InteractType.ACTIVATE),
       onClick: async () => {
@@ -306,6 +310,9 @@ export const Card: React.FC<{ idx: number }> = React.memo(({ idx }) => {
 
   const location = snap.location;
   const disabled = isCardDisabled(snap as CardType);
+  const idleActions = snap.idleInteractivities
+    .map(({ interactType }) => InteractType[interactType])
+    .join(" ");
 
   return (
     <animated.div
@@ -326,6 +333,7 @@ export const Card: React.FC<{ idx: number }> = React.memo(({ idx }) => {
       data-card-selected={snap.selectInfo.selected}
       data-card-targeted={snap.targeted}
       data-card-disabled={disabled}
+      data-card-idle-actions={idleActions}
       className={classnames(styles["mat-card"], {
         /* 有可操作选项或者已被选中*/
         [styles.glowing]: glowing || snap.selectInfo.selected,
@@ -389,6 +397,8 @@ interface Interactivy {
 
 type DropdownItem = NonNullable<MenuProps["items"]>[number] & {
   onClick: () => void;
+  "data-testid"?: string;
+  "data-action-type"?: string;
 };
 
 const handleEffectActivation = (

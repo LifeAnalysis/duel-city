@@ -107,9 +107,15 @@ export const PositionModal = () => {
       centered
       footer={<></>}
     >
-      <div className={styles.container}>
+      <div className={styles.container} data-testid="duel-position-modal">
         {positions.map((position, idx) => (
-          <Button key={idx} onClick={() => onSummit(position)}>
+          <Button
+            key={idx}
+            data-testid="duel-position-option"
+            data-position={ygopro.CardPosition[position]}
+            data-position-value={position}
+            onClick={() => onSummit(position)}
+          >
             {cardPosition(position)}
           </Button>
         ))}

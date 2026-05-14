@@ -306,11 +306,18 @@ export const Menu = () => {
     [ChainSetting.CHAIN_IGNORE, ignoreChain],
     [ChainSetting.CHAIN_SMART, smartChain],
   ] as const;
+  const chainSettingTestIds = {
+    [ChainSetting.CHAIN_ALL]: "all",
+    [ChainSetting.CHAIN_IGNORE]: "ignore",
+    [ChainSetting.CHAIN_SMART]: "smart",
+  };
   const chainSettingItems: MenuProps["items"] = chainSettingTexts.map(
     ([key, text]) => ({
       label: text,
       icon: <ChainIcon chainSetting={key} />,
       key,
+      "data-testid": `duel-chain-setting-${chainSettingTestIds[key]}`,
+      "data-chain-setting": chainSettingTestIds[key],
       onClick: () => {
         matStore.chainSetting = key;
       },
@@ -323,6 +330,7 @@ export const Menu = () => {
     {
       label: i18n("Confirm"),
       danger: true,
+      "data-testid": "duel-surrender-confirm",
       onClick: () => {
         sendSurrender(container.conn);
       },
@@ -360,6 +368,8 @@ export const Menu = () => {
         }}
       >
         <Button
+          data-testid="duel-chain-setting"
+          data-chain-setting={chainSettingTestIds[chainSetting]}
           icon={<ChainIcon chainSetting={chainSetting} />}
           type="text"
         ></Button>
@@ -389,7 +399,12 @@ export const Menu = () => {
         title={i18n("DoYouSurrunder")}
         menu={{ items: surrenderMenuItems }}
       >
-        <Button icon={<CloseCircleFilled />} type="text"></Button>
+        <Button
+          aria-label={i18n("DoYouSurrunder")}
+          data-testid="duel-surrender"
+          icon={<CloseCircleFilled />}
+          type="text"
+        ></Button>
       </DropdownWithTitle>
     </div>
   );
