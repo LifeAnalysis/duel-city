@@ -72,6 +72,14 @@ const BgExtraRow: React.FC<{
       {Array.from({ length: 2 }).map((_, i) => (
         <BgBlock
           key={i}
+          data-testid="duel-zone"
+          data-zone={ygopro.CardZone[MZONE]}
+          data-zone-value={MZONE}
+          data-controller={meController}
+          data-sequence={i + 5}
+          data-place-selectable={
+            !!meSnap[i].interactivity || !!opSnap[1 - i].interactivity
+          }
           className={styles.extra}
           onClick={() => {
             onBlockClick(container, meSnap[i].interactivity);
@@ -113,6 +121,12 @@ const BgRow: React.FC<{
       {Array.from({ length: 5 }).map((_, i) => (
         <BgBlock
           key={i}
+          data-testid="duel-zone"
+          data-zone={ygopro.CardZone[zone]}
+          data-zone-value={zone}
+          data-controller={controller}
+          data-sequence={i}
+          data-place-selectable={!!snap[i].interactivity}
           className={classnames({ [styles.szone]: szone })}
           onClick={() => onBlockClick(container, snap[i].interactivity)}
           disabled={snap[i].disabled}
@@ -165,6 +179,11 @@ const BgOtherBlocks: React.FC<{ op?: boolean }> = ({ op }) => {
   return (
     <div className={classnames(styles["other-blocks"], { [styles.op]: op })}>
       <BgBlock
+        data-testid="duel-zone"
+        data-zone={ygopro.CardZone[REMOVED]}
+        data-zone-value={REMOVED}
+        data-controller={controller}
+        data-place-selectable={false}
         className={styles.banish}
         glowing={!op && glowingBanish}
         chains={{
@@ -174,6 +193,11 @@ const BgOtherBlocks: React.FC<{ op?: boolean }> = ({ op }) => {
         }}
       />
       <BgBlock
+        data-testid="duel-zone"
+        data-zone={ygopro.CardZone[GRAVE]}
+        data-zone-value={GRAVE}
+        data-controller={controller}
+        data-place-selectable={false}
         className={styles.graveyard}
         glowing={!op && glowingGraveyard}
         chains={{
@@ -183,6 +207,12 @@ const BgOtherBlocks: React.FC<{ op?: boolean }> = ({ op }) => {
         }}
       />
       <BgBlock
+        data-testid="duel-zone"
+        data-zone={ygopro.CardZone[SZONE]}
+        data-zone-value={SZONE}
+        data-controller={controller}
+        data-sequence={5}
+        data-place-selectable={!!field.interactivity}
         className={styles.field}
         onClick={() => onBlockClick(container, field.interactivity)}
         disabled={field.disabled}
@@ -196,8 +226,20 @@ const BgOtherBlocks: React.FC<{ op?: boolean }> = ({ op }) => {
           op,
         }}
       />
-      <BgBlock className={styles.deck} chains={{ chains: [] }} />
       <BgBlock
+        data-testid="duel-zone"
+        data-zone="DECK"
+        data-controller={controller}
+        data-place-selectable={false}
+        className={styles.deck}
+        chains={{ chains: [] }}
+      />
+      <BgBlock
+        data-testid="duel-zone"
+        data-zone={ygopro.CardZone[EXTRA]}
+        data-zone-value={EXTRA}
+        data-controller={controller}
+        data-place-selectable={false}
         className={classnames(styles.deck, styles["extra-deck"])}
         glowing={!op && glowingExtra}
         chains={{

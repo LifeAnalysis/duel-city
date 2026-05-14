@@ -24,6 +24,16 @@
           "count": 15
         }
       ],
+      "lifePoints": [
+        {
+          "player": "op",
+          "life": 8000
+        },
+        {
+          "player": "me",
+          "life": 8000
+        }
+      ],
       "chainMarkers": []
     }
   ]

@@ -32,6 +32,7 @@ export const YesNoModal: React.FC = () => {
       footer={
         <>
           <Button
+            data-testid="duel-yesno-no"
             onClick={() => {
               sendSelectEffectYnResponse(container.conn, false);
               rs();
@@ -40,6 +41,7 @@ export const YesNoModal: React.FC = () => {
             取消
           </Button>
           <Button
+            data-testid="duel-yesno-yes"
             type="primary"
             onClick={() => {
               sendSelectEffectYnResponse(container.conn, true);
@@ -50,7 +52,9 @@ export const YesNoModal: React.FC = () => {
           </Button>
         </>
       }
-    />
+    >
+      <div data-testid="duel-yesno-modal" />
+    </NeosModal>
   );
 };
 

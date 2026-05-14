@@ -7,6 +7,7 @@ const skipWebServer = process.env.PLAYWRIGHT_SKIP_WEB_SERVER === "true";
 export default defineConfig({
   testDir: "./tests/e2e",
   fullyParallel: false,
+  workers: process.env.PLAYWRIGHT_LIVE === "1" ? 1 : undefined,
   timeout: 60_000,
   expect: {
     timeout: 15_000,

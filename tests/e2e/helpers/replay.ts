@@ -31,10 +31,16 @@ export interface ZoneCountSnapshot {
   count: number;
 }
 
+export interface PlayerLifeSnapshot {
+  player: "op" | "me";
+  life: number;
+}
+
 export interface DuelDomSnapshot {
   cards: DuelCardSnapshot[];
   deckCounts: ZoneCountSnapshot[];
   extraCounts: ZoneCountSnapshot[];
+  lifePoints: PlayerLifeSnapshot[];
   chainMarkers: ChainMarkerSnapshot[];
 }
 
@@ -123,6 +129,7 @@ export const DEFAULT_EXPECTED_REPLAY_ADVANCE_MASK =
   ReplayAdvanceFlag.CHAIN_SOLVED |
   ReplayAdvanceFlag.CHAIN_END |
   ReplayAdvanceFlag.POS_CHANGE |
+  ReplayAdvanceFlag.UPDATE_HP |
   ReplayAdvanceFlag.WIN |
   ReplayAdvanceFlag.BECOME_TARGET |
   ReplayAdvanceFlag.RELOAD_FIELD |
@@ -200,7 +207,10 @@ export async function writeReplayFixture(
 export async function uploadReplay(page: Page, replayPath: string) {
   await page.goto("/match");
 
-  await page.getByText(/录像回放|Replay/).first().click();
+  await page
+    .getByText(/录像回放|Replay/)
+    .first()
+    .click();
   await page.locator('input[type="file"]').setInputFiles(replayPath);
   await page.getByRole("button", { name: /开始回放|Start Replay/ }).click();
 
@@ -273,11 +283,7 @@ export async function snapshotDuelDom(page: Page): Promise<DuelDomSnapshot> {
       sequence: readNumberAttr(node, "data-card-sequence"),
       position: readStringAttr(node, "data-card-position"),
       isOverlay: readBoolAttr(node, "data-card-is-overlay"),
-      overlaySequence: readNumberAttr(
-        node,
-        "data-card-overlay-sequence",
-        0,
-      ),
+      overlaySequence: readNumberAttr(node, "data-card-overlay-sequence", 0),
       isToken: readBoolAttr(node, "data-card-is-token"),
       status: readNumberAttr(node, "data-card-status"),
       selectable: readBoolAttr(node, "data-card-selectable"),
@@ -311,10 +317,40 @@ export async function snapshotDuelDom(page: Page): Promise<DuelDomSnapshot> {
       }));
     });
 
+  const lifePoints = await page
+    .getByTestId("duel-player-life")
+    .evaluateAll((nodes) => {
+      const readStringAttr = (node: Element, name: string) => {
+        const value = node.getAttribute(name);
+        if (value === null) throw new Error(`${name} is missing.`);
+
+        return value;
+      };
+      const readNumberAttr = (node: Element, name: string) => {
+        const value = node.getAttribute(name);
+        if (value === null) throw new Error(`${name} is missing.`);
+
+        return Number(value);
+      };
+
+      return nodes.map((node) => {
+        const player = readStringAttr(node, "data-player");
+        if (player !== "op" && player !== "me") {
+          throw new Error(`Invalid data-player: ${player}.`);
+        }
+
+        return {
+          player,
+          life: readNumberAttr(node, "data-life"),
+        };
+      });
+    });
+
   return {
     cards: cards.filter(isAssertedCard).sort(compareCards),
     deckCounts: collectZoneCounts(cards, "DECK"),
     extraCounts: collectZoneCounts(cards, "EXTRA"),
+    lifePoints: lifePoints.sort(comparePlayerLife),
     chainMarkers: chainMarkers.sort(compareChainMarkers),
   };
 }
@@ -541,7 +577,10 @@ async function waitForReplayAdvanced(page: Page, previousIndex: number) {
 }
 
 async function isReplayEndVisible(page: Page) {
-  return page.getByText(/Win|Defeated/).first().isVisible();
+  return page
+    .getByText(/Win|Defeated/)
+    .first()
+    .isVisible();
 }
 
 function stableSnapshot(snapshot: DuelDomSnapshot) {
@@ -593,6 +632,17 @@ function compareChainMarkers(
     zoneRank(left.zone) - zoneRank(right.zone) ||
     left.sequence - right.sequence
   );
+}
+
+function comparePlayerLife(
+  left: PlayerLifeSnapshot,
+  right: PlayerLifeSnapshot,
+) {
+  return playerLifeRank(left.player) - playerLifeRank(right.player);
+}
+
+function playerLifeRank(player: PlayerLifeSnapshot["player"]) {
+  return player === "op" ? 0 : 1;
 }
 
 function zoneRank(zone: string) {

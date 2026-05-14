@@ -270,6 +270,7 @@ export const Component: React.FC = () => {
         <div className={styles.wrap}>
           <Space size={16}>
             <Select
+              data-testid="match-deck-select"
               title={i18n("Deck")}
               showSearch
               value={deckName}
@@ -326,6 +327,7 @@ export const Component: React.FC = () => {
               title={i18n("MCCustomRoomTitle")}
               desc={i18n("MCCustomRoomDesc")}
               icon={<BulbOutlined />}
+              testId="match-mode-mc-custom-room"
               onClick={onMCCustomRoom}
             />
             <Mode
@@ -350,12 +352,14 @@ export const Component: React.FC = () => {
               title={i18n("CustomRoomTitle")}
               desc={i18n("CustomRoomDesc")}
               icon={<SettingFilled />}
+              testId="match-mode-custom-room"
               onClick={onCustomRoom}
             />
             <Mode
               title={i18n("ReplayTitle")}
               desc={i18n("ReplayDesc")}
               icon={<IconFont type="icon-record" size={24} />}
+              testId="match-mode-replay"
               onClick={replayOpen}
             />
             <Mode title={i18n("WIPTitle")} desc={i18n("WIPDesc")} icon={null} />
@@ -374,8 +378,9 @@ const Mode: React.FC<{
   desc: string;
   icon: React.ReactNode;
   onClick?: () => void;
-}> = ({ title, desc, icon, onClick }) => (
-  <div className={styles.mode} onClick={onClick}>
+  testId?: string;
+}> = ({ title, desc, icon, onClick, testId }) => (
+  <div className={styles.mode} data-testid={testId} onClick={onClick}>
     <ScrollableArea maxHeight="15rem">
       <div className={styles.icon}>{icon}</div>
       <div className={styles.title}>{title}</div>

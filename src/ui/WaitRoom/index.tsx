@@ -141,6 +141,8 @@ export const Component: React.FC = () => {
               btn={
                 room.stage === RoomStage.WAITING ? (
                   <Button
+                    data-testid="waitroom-ready-toggle"
+                    data-player-ready={me?.state === PlayerState.READY}
                     size="large"
                     className={styles["btn-join"]}
                     onClick={onReady}
@@ -215,6 +217,11 @@ const PlayerZone: React.FC<{
 }> = ({ btn, who, player, avatar, ready }) => {
   return (
     <div
+      data-testid={`waitroom-player-${who}`}
+      data-player-name={
+        player && player.state !== PlayerState.LEAVE ? player.name : ""
+      }
+      data-player-ready={ready}
       className={classNames(styles["side-box"], styles[who], {
         [styles.ready]: ready,
       })}
@@ -272,6 +279,7 @@ const Controller: React.FC<{ onDeckChange: (deckName: string) => void }> = ({
   return (
     <Space>
       <Select
+        data-testid="waitroom-deck-select"
         title={i18n("Deck")}
         showSearch
         style={{ width: "15.6rem" }}
@@ -362,18 +370,22 @@ const ActionButton: React.FC<{
   const room = useSnapshot(roomStore);
   const { stage, isHost } = room;
   const { t: i18n } = useTranslation("WaitRoom");
+  const startDisabled =
+    stage !== RoomStage.WAITING ||
+    (stage === RoomStage.WAITING &&
+      (!isHost ||
+        room.getMePlayer()?.state !== PlayerState.READY ||
+        room.getOpPlayer()?.state !== PlayerState.READY));
   return (
     <MoraPopover onSelect={onMoraSelect}>
       <TpPopover onSelect={onTpSelect}>
         <SpecialButton
+          data-testid="waitroom-start"
+          data-room-stage={stage}
+          data-room-is-host={isHost}
+          aria-disabled={startDisabled}
           className={styles["btns-action"]}
-          disabled={
-            stage !== RoomStage.WAITING ||
-            (stage === RoomStage.WAITING &&
-              (!isHost ||
-                room.getMePlayer()?.state !== PlayerState.READY ||
-                room.getOpPlayer()?.state !== PlayerState.READY))
-          }
+          disabled={startDisabled}
           onClick={() => {
             sendHsStart(container.conn);
           }}

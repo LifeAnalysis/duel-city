@@ -52,6 +52,7 @@ export const MoraPopover: React.FC<
           {[Mora.Rock, Mora.Scissors, Mora.Paper].map((mora) => (
             <Button
               key={mora}
+              data-testid={`waitroom-mora-${mora}`}
               size="large"
               type="text"
               icon={<IconFont type={`icon-hand-${mora}`} size={16} />}
@@ -103,6 +104,9 @@ export const TpPopover: React.FC<
           {[Tp.First, Tp.Second].map((item) => (
             <Button
               key={item}
+              data-testid={`waitroom-tp-${
+                item === Tp.First ? "first" : "second"
+              }`}
               size="large"
               type="text"
               icon={

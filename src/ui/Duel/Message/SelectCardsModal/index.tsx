@@ -138,13 +138,22 @@ export const SelectCardsModal: React.FC<SelectCardsModalProps> = ({
       }}
       footer={
         <>
-          {cancelable && <Button onClick={onCancel}>{cancelText}</Button>}
+          {cancelable && (
+            <Button data-testid="duel-select-card-cancel" onClick={onCancel}>
+              {cancelText}
+            </Button>
+          )}
           {finishable && (
-            <Button type="primary" onClick={onFinish}>
+            <Button
+              data-testid="duel-select-card-finish"
+              type="primary"
+              onClick={onFinish}
+            >
               {finishText}
             </Button>
           )}
           <Button
+            data-testid="duel-select-card-submit"
             type="primary"
             disabled={!submitable}
             onClick={() =>
@@ -156,7 +165,14 @@ export const SelectCardsModal: React.FC<SelectCardsModalProps> = ({
         </>
       }
     >
-      <Space direction="vertical" style={{ width: "100%", overflow: "hidden" }}>
+      <Space
+        data-testid="duel-select-cards-modal"
+        data-select-min={min}
+        data-select-max={max}
+        data-select-single={single}
+        direction="vertical"
+        style={{ width: "100%", overflow: "hidden" }}
+      >
         <Selector
           zoneOptions={zoneOptions}
           selectedZone={selectedZone}
@@ -190,6 +206,11 @@ export const SelectCardsModal: React.FC<SelectCardsModalProps> = ({
                       >
                         {/* 这儿必须有一个div，不然tooltip不生效 */}
                         <div
+                          data-testid="duel-select-card-option"
+                          data-card-code={card.meta.id}
+                          data-card-controller={card.location?.controller}
+                          data-card-zone-value={card.location?.zone}
+                          data-card-sequence={card.location?.sequence}
                           onDoubleClick={() => onQuickSelect(card as Option)}
                         >
                           <CheckCard

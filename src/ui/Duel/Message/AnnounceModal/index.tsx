@@ -65,20 +65,26 @@ export const AnnounceModal: React.FC = () => {
       title="请输入关键字并选择宣言的卡"
       open={isOpen}
       footer={
-        <Button disabled={selected === undefined} onClick={onSummit}>
+        <Button
+          data-testid="duel-announce-submit"
+          disabled={selected === undefined}
+          onClick={onSummit}
+        >
           确定
         </Button>
       }
     >
-      <div className={styles.container}>
+      <div className={styles.container} data-testid="duel-announce-modal">
         <Input
           className={styles.input}
+          data-testid="duel-announce-search"
           placeholder="请输入宣言卡名(或关键字)"
           variant="borderless"
           value={searchWord}
           onChange={(e) => setSearchWord(e.target.value)}
           suffix={
             <Button
+              data-testid="duel-announce-search-submit"
               type="text"
               icon={<SearchOutlined />}
               onClick={() => handleSearch()}
@@ -97,6 +103,8 @@ export const AnnounceModal: React.FC = () => {
           renderItem={(item, index) => (
             <List.Item
               key={index}
+              data-testid="duel-announce-card-option"
+              data-card-code={item.id}
               actions={[
                 <Checkbox
                   checked={item.id === selected}
