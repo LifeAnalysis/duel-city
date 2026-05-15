@@ -22,16 +22,28 @@ export default (data: Uint8Array) => {
     actions: [],
   });
 
+  let sequence = 0;
   try {
     while (true) {
       const len = reader.inner.readInt32();
-      if (len === 4) continue;
+      if (len === 4) {
+        sequence += 1;
+        continue;
+      }
       const pos = reader.inner.offset();
       const action = readUpdateAction(reader);
       if (action) {
+        if (action.location === undefined && zone !== undefined) {
+          action.location = new ygopro.CardLocation({
+            controller: player,
+            zone,
+            sequence,
+          });
+        }
         msg.actions.push(action);
       }
       reader.inner.setOffset(pos + len - 4);
+      sequence += 1;
     }
   } catch (e) {
     // console.log(e)

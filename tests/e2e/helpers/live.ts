@@ -95,7 +95,7 @@ export async function startAiDuel(page: Page, options: LiveRoomOptions = {}) {
 
   await waitForAutoBot(page, room.botName);
   await completeDuelStartSelections(page, {
-    mora: options.mora ?? "rock",
+    mora: options.mora ?? "paper",
     tp: options.tp ?? "first",
   });
   await expectDuelStarted(page);
@@ -367,11 +367,12 @@ export async function expectPlayerLifeBelow(
   page: Page,
   player: "me" | "op",
   life: number,
+  timeout = 120000,
 ) {
   await expect
     .poll(async () => getPlayerLife(page, player), {
       message: `Expected ${player} life points to drop below ${life}.`,
-      timeout: 120000,
+      timeout,
     })
     .toBeLessThan(life);
 }
@@ -459,6 +460,9 @@ export async function expectControllerHandCount(
   page: Page,
   controller: string | number,
   count: number,
+  options: {
+    timeout?: number;
+  } = {},
 ) {
   await expect(
     duelCard(page, {
@@ -466,7 +470,7 @@ export async function expectControllerHandCount(
       zone: "HAND",
     }),
     `Expected controller ${controller} to have ${count} hand cards.`,
-  ).toHaveCount(count, { timeout: 60000 });
+  ).toHaveCount(count, { timeout: options.timeout ?? 60000 });
 }
 
 export async function selectCardsFromModal(page: Page, cardCodes: number[]) {
@@ -1201,6 +1205,147 @@ export async function expectOverlayMaterialCount(
   ).toHaveCount(options.count, { timeout: 60000 });
 }
 
+export async function openCardDetail(
+  page: Page,
+  card: Locator,
+  options: {
+    timeout?: number;
+  } = {},
+) {
+  await expect(card).toBeVisible({ timeout: 60000 });
+  const cardCode = await card.getAttribute("data-card-code");
+  const detail = page.getByTestId("duel-card-detail");
+  const deadline = Date.now() + (options.timeout ?? 60000);
+
+  while (Date.now() < deadline) {
+    await closeVisibleDrawer(page);
+    await card.scrollIntoViewIfNeeded();
+    await card.click({ force: true, timeout: 3000 });
+
+    try {
+      await expect(detail).toBeVisible({ timeout: 3000 });
+      if (cardCode) {
+        await expect(detail).toHaveAttribute("data-card-code", cardCode, {
+          timeout: 3000,
+        });
+      }
+
+      return;
+    } catch {
+      await page.waitForTimeout(250);
+    }
+  }
+
+  await expect(detail).toBeVisible({ timeout: 1 });
+  if (cardCode) {
+    await expect(detail).toHaveAttribute("data-card-code", cardCode, {
+      timeout: 1,
+    });
+  }
+}
+
+export async function expectCardStats(
+  page: Page,
+  card: Locator,
+  options: {
+    attack?: number;
+    defense?: number;
+  },
+) {
+  const deadline = Date.now() + 120000;
+
+  while (Date.now() < deadline) {
+    try {
+      await openCardDetail(page, card, { timeout: 5000 });
+    } catch {
+      await closeVisibleDrawer(page);
+      await page.waitForTimeout(500);
+      continue;
+    }
+
+    if (await cardStatsMatch(page, options)) return;
+
+    await closeVisibleDrawer(page);
+    await page.waitForTimeout(500);
+  }
+
+  await openCardDetail(page, card, { timeout: 5000 });
+  await expectCardStatValues(page, options);
+}
+
+export async function expectCardCounter(
+  page: Page,
+  card: Locator,
+  options: {
+    counterType: number;
+    count: number;
+  },
+) {
+  await openCardDetail(page, card);
+  await expect(
+    page.locator(
+      [
+        '[data-testid="duel-card-counter"]',
+        `[data-counter-type="${options.counterType}"]`,
+      ].join(""),
+    ),
+  ).toHaveAttribute("data-counter-count", String(options.count), {
+    timeout: 60000,
+  });
+}
+
+async function cardStatsMatch(
+  page: Page,
+  options: {
+    attack?: number;
+    defense?: number;
+  },
+) {
+  const [attack, defense] = await Promise.all([
+    readCardStatValue(page, "ATK"),
+    readCardStatValue(page, "DEF"),
+  ]);
+
+  return (
+    (options.attack === undefined || attack === String(options.attack)) &&
+    (options.defense === undefined || defense === String(options.defense))
+  );
+}
+
+async function expectCardStatValues(
+  page: Page,
+  options: {
+    attack?: number;
+    defense?: number;
+  },
+) {
+  if (options.attack !== undefined) {
+    await expect(
+      page.locator('[data-testid="duel-card-stat"][data-stat="ATK"]'),
+    ).toHaveAttribute("data-stat-value", String(options.attack), {
+      timeout: 1000,
+    });
+  }
+
+  if (options.defense !== undefined) {
+    await expect(
+      page.locator('[data-testid="duel-card-stat"][data-stat="DEF"]'),
+    ).toHaveAttribute("data-stat-value", String(options.defense), {
+      timeout: 1000,
+    });
+  }
+}
+
+async function readCardStatValue(page: Page, stat: "ATK" | "DEF") {
+  const locator = page.locator(
+    `[data-testid="duel-card-stat"][data-stat="${stat}"]`,
+  );
+
+  if (!(await locator.isVisible())) return undefined;
+
+  return locator.getAttribute("data-stat-value");
+}
+
 export async function waitForAnnounceCardModal(
   page: Page,
   options?: {
@@ -1312,7 +1457,7 @@ export async function announceCardBySearch(
 
 export async function surrenderAndClosePage(page: Page) {
   await page.keyboard.press("Escape");
-  await closeVisibleDrawer(page);
+  await closeVisibleDrawer(page, { required: false });
 
   const surrender = page.getByTestId("duel-surrender");
   const confirm = page.getByTestId("duel-surrender-confirm").last();
@@ -1338,12 +1483,23 @@ export async function surrenderAndClosePage(page: Page) {
   await page.close();
 }
 
-async function closeVisibleDrawer(page: Page) {
+async function closeVisibleDrawer(
+  page: Page,
+  options: {
+    required?: boolean;
+  } = {},
+) {
   const close = page.locator(".ant-drawer-close:visible").last();
 
   if (await close.isVisible()) {
-    await close.click({ force: true });
-    await page.waitForTimeout(250);
+    await close.dispatchEvent("click");
+    try {
+      await expect(page.getByTestId("duel-card-detail")).toBeHidden({
+        timeout: 5000,
+      });
+    } catch (error) {
+      if (options.required ?? true) throw error;
+    }
   }
 }
 

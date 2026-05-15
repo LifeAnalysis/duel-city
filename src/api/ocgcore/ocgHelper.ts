@@ -22,6 +22,12 @@ import TimeConfirm from "./ocgAdapter/ctos/ctosTimeConfirm";
 import TpResult from "./ocgAdapter/ctos/ctosTpResult";
 import UpdateDeckAdapter from "./ocgAdapter/ctos/ctosUpdateDeck";
 
+interface SelectPlaceResponseValue {
+  controller: number;
+  zone: ygopro.CardZone;
+  sequence: number;
+}
+
 export function sendUpdateDeck(conn: WebSocketStream, deck: IDeck) {
   const updateDeck = new ygopro.YgoCtosMsg({
     ctos_update_deck: new ygopro.CtosUpdateDeck({
@@ -189,18 +195,24 @@ export function sendSelectIdleCmdResponse(
 
 export function sendSelectPlaceResponse(
   conn: WebSocketStream,
-  value: {
-    controller: number;
-    zone: ygopro.CardZone;
-    sequence: number;
-  },
+  value: SelectPlaceResponseValue | SelectPlaceResponseValue[],
 ) {
+  const values = Array.isArray(value) ? value : [value];
+  const first = values[0];
   const response = new ygopro.YgoCtosMsg({
     ctos_response: new ygopro.CtosGameMsgResponse({
       select_place: new ygopro.CtosGameMsgResponse.SelectPlaceResponse({
-        player: value.controller,
-        zone: value.zone,
-        sequence: value.sequence,
+        player: first.controller,
+        zone: first.zone,
+        sequence: first.sequence,
+        places: values.map(
+          (place) =>
+            new ygopro.CtosGameMsgResponse.SelectPlaceResponse.Place({
+              player: place.controller,
+              zone: place.zone,
+              sequence: place.sequence,
+            }),
+        ),
       }),
     }),
   });

@@ -17,19 +17,28 @@ export default async (
   playEffect(AudioActionType.SOUND_REVEAL);
   const context = container.context;
   const cards = confirmCards.cards;
+  const isDeckTop = (
+    confirmCards as typeof confirmCards & {
+      is_decktop?: boolean;
+    }
+  ).is_decktop;
   console.color("pink")(`confirmCards: ${cards}`);
 
-  for (const card of cards) {
-    const target = context.cardStore.at(
-      card.location,
-      card.controller,
-      card.sequence,
-    );
+  for (const [index, card] of cards.entries()) {
+    const target = isDeckTop
+      ? context.cardStore
+          .at(ygopro.CardZone.DECK, confirmCards.player)
+          .sort((a, b) => a.location.sequence - b.location.sequence)
+          .at(-1 - index)
+      : context.cardStore.at(card.location, card.controller, card.sequence);
 
     if (target) {
       // 设置`occupant`
-      const meta = fetchCard(card.code);
-      target.meta = meta;
+      const meta = card.code !== 0 ? fetchCard(card.code) : target.meta;
+      if (card.code !== 0) {
+        target.code = card.code;
+        target.meta = meta;
+      }
 
       const zone = target.location.zone;
       const position = target.location.position;

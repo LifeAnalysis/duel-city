@@ -1,6 +1,6 @@
 import path from "node:path";
 
-import { expect, test } from "@playwright/test";
+import { expect, type Page, test } from "@playwright/test";
 
 import {
   activateHandCard,
@@ -12,7 +12,6 @@ import {
   normalSummonToMainMonsterZone,
   readYdkDeck,
   resolveSummonToAnyMainMonsterZone,
-  selectCardsFromModal,
   specialSummonExtraDeckCardToMainMonsterZone,
   specialSummonHandCardToMainMonsterZone,
   startAiDuel,
@@ -25,6 +24,40 @@ const PHOTON_THRASHER = 65367484;
 const DOUBLE_SUMMON = 43422537;
 const MYSTICAL_ELF = 15025844;
 const UTOPIA = 84013237;
+
+async function selectXyzMaterials(page: Page, controller: string | number) {
+  const modal = page
+    .locator(
+      '[data-testid="duel-select-cards-modal"]:visible:not([data-select-max="0"])',
+    )
+    .last();
+
+  await expect(modal).toBeVisible({ timeout: 60000 });
+
+  for (const selector of [
+    `[data-testid="duel-select-card-option"][data-card-code="${PHOTON_THRASHER}"][data-card-controller="${controller}"][data-card-zone="MZONE"][data-card-sequence="0"]`,
+    `[data-testid="duel-select-card-option"][data-card-code="${MYSTICAL_ELF}"][data-card-controller="${controller}"][data-card-zone="MZONE"][data-card-sequence="1"]`,
+  ]) {
+    const option = modal.locator(selector).first();
+    await expect(option).toBeVisible({ timeout: 30000 });
+
+    const input = option
+      .locator('input[type="checkbox"], input[type="radio"]')
+      .first();
+
+    if ((await input.count()) > 0) {
+      await input.check({ force: true });
+    } else {
+      await option.click({ force: true });
+    }
+  }
+
+  const submit = page
+    .locator('[data-testid="duel-select-card-submit"]:visible:enabled')
+    .last();
+  await expect(submit).toBeEnabled({ timeout: 30000 });
+  await submit.click();
+}
 
 test.describe("live select_card xyz summon interaction", () => {
   test.skip(
@@ -61,7 +94,7 @@ test.describe("live select_card xyz summon interaction", () => {
       max: 2,
       cancelable: true,
     });
-    await selectCardsFromModal(page, [PHOTON_THRASHER, MYSTICAL_ELF]);
+    await selectXyzMaterials(page, controller);
     const xyzSequence = await resolveSummonToAnyMainMonsterZone(page, {
       cardCode: UTOPIA,
       controller,

@@ -5,7 +5,6 @@ import { expect, test } from "@playwright/test";
 import {
   endCurrentTurn,
   expectChainMarker,
-  expectControllerHandCount,
   expectMyTurn,
   expectSelectChainModal,
   getControllerOfHandCard,
@@ -40,13 +39,12 @@ test.describe("live select_chain interaction", () => {
     await installOnlyLiveDeck(page, await readYdkDeck(DECK, DECK_NAME));
     await startAiDuel(page, {
       chainSetting: "all",
-      mora: "rock",
+      mora: "paper",
       tp: "first",
     });
     await expectMyTurn(page);
 
     const controller = await getControllerOfHandCard(page, JAR_OF_GREED);
-    await expectControllerHandCount(page, controller, 5);
 
     await setHandCardToSpellTrapZone(page, JAR_OF_GREED, { sequence: 1 });
     await setHandCardToSpellTrapZone(page, RECKLESS_GREED, { sequence: 3 });

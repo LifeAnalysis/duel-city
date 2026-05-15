@@ -7,12 +7,10 @@ type MsgSelectPlace = ygopro.StocGameMessage.MsgSelectPlace;
 export default async (container: Container, selectPlace: MsgSelectPlace) => {
   const conn = container.conn;
   const context = container.context;
-  if (selectPlace.count !== 1) {
-    console.warn(`Unhandled case: ${selectPlace}`);
-    return;
-  }
+  context.placeStore.clearAllInteractivity();
+  context.placeStore.startPlaceSelection(selectPlace.count);
 
-  if (selectPlace.places.length === 1) {
+  if (selectPlace.count === 1 && selectPlace.places.length === 1) {
     const place = selectPlace.places[0];
     sendSelectPlaceResponse(conn, {
       controller: place.controller,

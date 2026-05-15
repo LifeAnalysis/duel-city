@@ -4,6 +4,17 @@ import { callCardMove } from "@/ui/Duel/PlayMat/Card";
 import MsgUpdateData = ygopro.StocGameMessage.MsgUpdateData;
 import { TYPE_TOKEN } from "@/common";
 import { Container } from "@/container";
+import { CardType } from "@/stores";
+
+const clearCardData = (card: CardType) => {
+  card.code = 0;
+  card.meta = { id: 0, data: {}, text: {} };
+  card.counters = {};
+  card.idleInteractivities = [];
+  card.isToken = false;
+  card.targeted = false;
+  card.status = 0;
+};
 
 export default async (container: Container, updateData: MsgUpdateData) => {
   const { player: controller, zone, actions } = updateData;
@@ -16,8 +27,17 @@ export default async (container: Container, updateData: MsgUpdateData) => {
           .filter((card) => card.location.sequence === sequence)
           .at(0);
         if (target) {
-          if (action?.code > 0 && target.code === 0) {
-            // 当本地code为0且action的code大于0时，才从db加载整个meta信息
+          if ((action as typeof action & { clear?: boolean }).clear) {
+            clearCardData(target);
+            continue;
+          }
+
+          if (action?.code === 0) {
+            clearCardData(target);
+          } else if (
+            action?.code > 0 &&
+            (target.code !== action.code || target.meta.id === 0)
+          ) {
             const newMeta = fetchCard(action.code);
             target.code = action.code;
             target.meta = newMeta;

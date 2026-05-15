@@ -21,6 +21,9 @@ tests/e2e/fixtures/live/decks/
   select-chain.ydk
   select-card.ydk
   select-option.ydk
+  update-counter-war-rock-ordeal.ydk
+  update-data-equip-stats.ydk
+  update-data-shuffle-hand.ydk
 ```
 
 These decks are test fixtures, not normal playable decks. Prefer the smallest
@@ -65,3 +68,18 @@ two visible overlay materials.
 (`43422537`), `Angel Trumpeter` (`87979586`), and `Mystical Elf` (`15025844`).
 The related test opens `Stardust Dragon` (`44508094`) from the Extra Deck and
 selects `Angel Trumpeter` and then `Photon Thrasher` as synchro materials.
+
+`update-data-shuffle-hand.ydk` opens `Koa'ki Ring` (`46089249`), `Iron Core of
+Koa'ki Meiru` (`36623431`), and `Mystical Elf` (`15025844`). The related test
+normal summons `Mystical Elf`, activates `Koa'ki Ring`, reveals `Iron Core` as
+cost, and verifies the hand, graveyard, and LP DOM stay consistent after
+`Duel.ShuffleHand` and the destroy effect resolve.
+
+`update-data-equip-stats.ydk` opens `Mystical Elf` (`15025844`), `United We
+Stand` (`56747793`), `Giant Soldier of Stone` (`13039848`), `Awakening`
+(`98374133`). The related tests equip the spell cards and assert card detail
+ATK/DEF values after the server refreshes card query data.
+
+`update-counter-war-rock-ordeal.ydk` opens `War Rock Ordeal` (`71331215`). The
+related test activates it and asserts the rendered counter type/count in the
+card detail panel.

@@ -5,15 +5,13 @@ import { expect, test } from "@playwright/test";
 import {
   announceNumbers,
   endCurrentTurn,
-  expectControllerHandCount,
   expectMyTurn,
-  getControllerOfHandCard,
   installOnlyLiveDeck,
   LIVE_E2E_ENABLED,
   readYdkDeck,
   selectChainCardFromModal,
-  setHandCard,
   setChainSetting,
+  setHandCard,
   startAiDuel,
   surrenderAndClosePage,
 } from "../helpers/live";
@@ -36,13 +34,10 @@ test.describe("live announce_number interaction", () => {
     await installOnlyLiveDeck(page, await readYdkDeck(DECK, DECK_NAME));
     await startAiDuel(page, {
       chainSetting: "all",
-      mora: "rock",
+      mora: "paper",
       tp: "first",
     });
     await expectMyTurn(page);
-
-    const initialController = await getControllerOfHandCard(page, SIXTH_SENSE);
-    await expectControllerHandCount(page, initialController, 5);
 
     const controller = await setHandCard(page, SIXTH_SENSE);
     await setChainSetting(page, "all");

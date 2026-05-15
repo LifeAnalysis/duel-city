@@ -29,7 +29,7 @@ export default (container: Container, field: MsgReloadField) => {
                 zone: zoneAction.zone,
                 sequence: zoneAction.sequence,
                 is_overlay: overlaySequence > 0,
-                overlay_sequence: Math.min(overlaySequence - 1, 0),
+                overlay_sequence: Math.max(overlaySequence - 1, 0),
                 position: zoneAction.position,
               }),
               counters: {},

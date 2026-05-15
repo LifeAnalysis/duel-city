@@ -1,3 +1,5 @@
+import { v4 as v4uuid } from "uuid";
+
 import { fetchCard, ygopro } from "@/api";
 import { Container } from "@/container";
 import { AudioActionType, playEffect } from "@/infra/audio";
@@ -5,9 +7,10 @@ import { CardType } from "@/stores";
 import { callCardMove } from "@/ui/Duel/PlayMat/Card";
 
 import { REASON_DESTROY, REASON_MATERIAL, TYPE_TOKEN } from "../../common";
+import { genCard } from "../utils";
 
 type MsgMove = ygopro.StocGameMessage.MsgMove;
-const { HAND, GRAVE, REMOVED, DECK, EXTRA, MZONE, SZONE, TZONE } =
+const { EMPTY, HAND, GRAVE, REMOVED, DECK, EXTRA, MZONE, SZONE, TZONE } =
   ygopro.CardZone;
 const { FACEDOWN, FACEDOWN_ATTACK, FACEDOWN_DEFENSE } = ygopro.CardPosition;
 
@@ -38,6 +41,8 @@ export default async (container: Container, move: MsgMove) => {
   const from = move.from;
   const to = move.to;
   const reason = move.reason;
+  const fromEmpty = from.zone === EMPTY;
+  const toEmpty = to.zone === EMPTY;
 
   const meta = fetchCard(code);
   if (meta.data.type !== undefined && (meta.data.type & TYPE_TOKEN) > 0) {
@@ -63,7 +68,24 @@ export default async (container: Container, move: MsgMove) => {
 
   let target: CardType;
 
-  if (from.is_overlay) {
+  if (fromEmpty) {
+    target = genCard({
+      uuid: v4uuid(),
+      code,
+      location: to,
+      counters: {},
+      idleInteractivities: [],
+      meta,
+      isToken:
+        meta.data.type !== undefined && (meta.data.type & TYPE_TOKEN) > 0,
+      targeted: false,
+      selectInfo: {
+        selectable: false,
+        selected: false,
+      },
+      status: 0,
+    });
+  } else if (from.is_overlay) {
     // 超量素材的去除
     const overlayMaterial = context.cardStore.at(
       from.zone,
@@ -100,7 +122,7 @@ export default async (container: Container, move: MsgMove) => {
   // 超量
   if (to.is_overlay && from.zone === MZONE) {
     // 准备超量召唤，超量素材入栈
-    if (reason === REASON_MATERIAL) {
+    if ((reason & REASON_MATERIAL) > 0) {
       to.zone = MZONE;
       overlayStack.push(to);
     }
@@ -138,21 +160,24 @@ export default async (container: Container, move: MsgMove) => {
   }
 
   // 维护sequence
-  const fromCards = context.cardStore.at(from.zone, from.controller);
-  const toCards = context.cardStore.at(to.zone, to.controller);
+  const fromCards = fromEmpty
+    ? []
+    : context.cardStore.at(from.zone, from.controller);
+  const toCards = toEmpty ? [] : context.cardStore.at(to.zone, to.controller);
 
   if (
+    !fromEmpty &&
     [HAND, GRAVE, REMOVED, DECK, EXTRA, TZONE].includes(from.zone) &&
     !from.is_overlay
   )
     fromCards.forEach(
       (c) => c.location.sequence > from.sequence && c.location.sequence--,
     );
-  if ([HAND, GRAVE, REMOVED, DECK, EXTRA, TZONE].includes(to.zone))
+  if (!toEmpty && [HAND, GRAVE, REMOVED, DECK, EXTRA, TZONE].includes(to.zone))
     toCards.forEach(
       (c) => c.location.sequence >= to.sequence && c.location.sequence++,
     );
-  if (from.is_overlay) {
+  if (!fromEmpty && from.is_overlay) {
     // 超量素材的序号也需要维护
     const overlay_sequence = from.overlay_sequence;
     for (const overlay of context.cardStore.findOverlay(
@@ -169,6 +194,15 @@ export default async (container: Container, move: MsgMove) => {
   // 更新信息
   target.code = code;
   target.location = to;
+  if (fromEmpty) {
+    context.cardStore.inner.push(target);
+  }
+  if (toEmpty) {
+    context.cardStore.inner = context.cardStore.inner.filter(
+      (card) => card.uuid !== target.uuid,
+    );
+    return;
+  }
   if (!(from.zone === MZONE && to.zone === MZONE)) {
     // if the card is moved, it no longer being targeted
     // unless it move over the monster zone.
@@ -192,11 +226,13 @@ export default async (container: Container, move: MsgMove) => {
       to.position === FACEDOWN_DEFENSE)
   ) {
     playEffect(AudioActionType.SOUND_SET);
-  } else if (reason === REASON_DESTROY) {
+  } else if ((reason & REASON_DESTROY) > 0) {
     playEffect(AudioActionType.SOUND_DESTROYED);
   }
 
-  const p = callCardMove(target.uuid, { fromZone: from.zone });
+  const p = fromEmpty
+    ? Promise.resolve()
+    : callCardMove(target.uuid, { fromZone: from.zone });
   // 如果from或者to是手卡，那么需要刷新除了这张卡之外，这个玩家的所有手卡
   if ([from.zone, to.zone].includes(HAND)) {
     const pHands = context.cardStore
