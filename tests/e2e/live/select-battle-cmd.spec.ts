@@ -1,6 +1,6 @@
 import path from "node:path";
 
-import { test } from "@playwright/test";
+import { expect, test } from "@playwright/test";
 
 import {
   chooseDuelPhase,
@@ -45,6 +45,10 @@ test.describe("live select_battle_cmd interaction", () => {
     await normalSummonToMainMonsterZone(page, {
       cardCode: JINZO_7,
       sequence: 2,
+    });
+    await page.locator(".ant-drawer-close:visible").last().click();
+    await expect(page.getByTestId("duel-card-detail")).toBeHidden({
+      timeout: 5000,
     });
     await chooseDuelPhase(page, "battle");
 

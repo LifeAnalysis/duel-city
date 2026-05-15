@@ -135,6 +135,9 @@ export function utf8ArrayToStr(array: Uint8Array) {
 
 export function cardZoneToNumber(zone: ygopro.CardZone): number {
   switch (zone) {
+    case ygopro.CardZone.EMPTY: {
+      return 0x00;
+    }
     case ygopro.CardZone.DECK: {
       return 0x01;
     }
@@ -175,6 +178,9 @@ export function numberToCardZone(
   location: number,
 ): ygopro.CardZone | undefined {
   switch (location) {
+    case 0x00: {
+      return ygopro.CardZone.EMPTY;
+    }
     case 0x01: {
       return ygopro.CardZone.DECK;
     }
@@ -288,7 +294,11 @@ export function readUpdateAction(
   reader: BufferReaderExt,
 ): MsgUpdateData.Action | undefined {
   const flag = reader.inner.readInt32();
-  if (flag === 0) return undefined;
+  if (flag === 0) {
+    const action = new MsgUpdateData.Action({});
+    (action as MsgUpdateData.Action & { clear?: boolean }).clear = true;
+    return action;
+  }
 
   const mask = -1;
   let code = mask;

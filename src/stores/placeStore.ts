@@ -37,8 +37,8 @@ const initialState = {
     op: genPLaces(7),
   },
   [SZONE]: {
-    me: genPLaces(6),
-    op: genPLaces(6),
+    me: genPLaces(8),
+    op: genPLaces(8),
   },
   [HAND]: {
     me: genPLaces(100), // 给100个占位
@@ -59,6 +59,13 @@ const initialState = {
 };
 
 export class PlaceStore implements NeosStore {
+  selectPlaceRequiredCount = 1;
+  selectPlaceResponses: {
+    controller: number;
+    zone: ygopro.CardZone;
+    sequence: number;
+  }[] = [];
+
   inner: {
     [zone: number]: {
       me: BlockState[];
@@ -86,12 +93,32 @@ export class PlaceStore implements NeosStore {
       });
     });
   }
+  startPlaceSelection(requiredCount: number) {
+    this.selectPlaceRequiredCount = Math.max(requiredCount, 1);
+    this.selectPlaceResponses = [];
+  }
+  pushPlaceResponse(response: {
+    controller: number;
+    zone: ygopro.CardZone;
+    sequence: number;
+  }) {
+    const exists = this.selectPlaceResponses.some(
+      (item) =>
+        item.controller === response.controller &&
+        item.zone === response.zone &&
+        item.sequence === response.sequence,
+    );
+    if (!exists) {
+      this.selectPlaceResponses.push(response);
+    }
+  }
   reset(): void {
     const resetObj = cloneDeep(initialState);
     Object.keys(resetObj).forEach((key) => {
       // @ts-ignore
       this.inner[key] = resetObj[key];
     });
+    this.startPlaceSelection(1);
   }
 }
 

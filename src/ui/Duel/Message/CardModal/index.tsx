@@ -64,7 +64,11 @@ export const CardModal = () => {
       closeIcon={<LeftOutlined />}
       width={350}
     >
-      <div className={styles.container}>
+      <div
+        className={styles.container}
+        data-testid="duel-card-detail"
+        data-card-code={meta?.id}
+      >
         <Space
           align="start"
           size={18}
@@ -120,12 +124,25 @@ const AttLine = (props: {
 };
 
 const AtkLine = (props: { atk?: number; def?: number }) => (
-  <Space size={10} className={styles.atkLine} direction="vertical">
-    <div>
+  <Space
+    size={10}
+    className={styles.atkLine}
+    direction="vertical"
+    data-testid="duel-card-stats"
+  >
+    <div
+      data-testid="duel-card-stat"
+      data-stat="ATK"
+      data-stat-value={props.atk ?? ""}
+    >
       <div className={styles.title}>ATK</div>
       <div className={styles.number}>{props.atk ?? "?"}</div>
     </div>
-    <div>
+    <div
+      data-testid="duel-card-stat"
+      data-stat="DEF"
+      data-stat-value={props.def ?? ""}
+    >
       <div className={styles.title}>DEF</div>
       <div className={styles.number}>{props.def ?? "?"}</div>
     </div>
@@ -138,7 +155,12 @@ const CounterLine = (props: { counters: { [type: number]: number } }) => {
       {Object.entries(props.counters).map(
         ([counterType, count], idx) =>
           count > 0 && (
-            <div key={idx}>
+            <div
+              key={idx}
+              data-testid="duel-card-counter"
+              data-counter-type={counterType}
+              data-counter-count={count}
+            >
               <div className={styles.title}>
                 {fetchStrings(
                   Region.Counter,

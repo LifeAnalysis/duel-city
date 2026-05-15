@@ -258,7 +258,7 @@ export default async function handleGameMsg(
       break;
     }
     case "swap": {
-      onMsgSwap(container, msg.swap);
+      await onMsgSwap(container, msg.swap);
 
       break;
     }

@@ -7,8 +7,8 @@ import { eventbus, Task } from "@/infra";
 import { IconFont } from "../Shared";
 
 export enum Mora {
-  Scissors = "scissors",
   Rock = "rock",
+  Scissors = "scissors",
   Paper = "paper",
 }
 

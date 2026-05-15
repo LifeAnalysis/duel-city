@@ -22,7 +22,10 @@ export default (data: Uint8Array) => {
   const msg = new MsgUpdateData({ player, zone, actions: [] });
   const action = readUpdateAction(reader);
   if (action) {
-    if (action.location !== undefined && zone !== undefined) {
+    if (zone !== undefined) {
+      if (action.location === undefined) {
+        action.location = new ygopro.CardLocation({});
+      }
       action.location.controller = player;
       action.location.zone = zone;
       action.location.sequence = sequence;

@@ -16,7 +16,7 @@
       },
       {
         "fieldName": "reason",
-        "fieldType": "uint8"
+        "fieldType": "uint32"
       }
     ]
   },
@@ -65,7 +65,24 @@
   },
   "55": {
     "protoType": "swap",
-    "fields": []
+    "fields": [
+      {
+        "fieldName": "code1",
+        "fieldType": "uint32"
+      },
+      {
+        "fieldName": "location1",
+        "fieldType": "CardLocation"
+      },
+      {
+        "fieldName": "code2",
+        "fieldType": "uint32"
+      },
+      {
+        "fieldName": "location2",
+        "fieldType": "CardLocation"
+      }
+    ]
   },
   "60": {
     "protoType": "summoning",

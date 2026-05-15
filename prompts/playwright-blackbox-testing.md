@@ -299,6 +299,9 @@ tests/e2e/
     select-position.spec.ts
     select-place.spec.ts
     select-yesno.spec.ts
+    update-counter.spec.ts
+    update-data-equip-stats.spec.ts
+    update-data-shuffle-hand.spec.ts
   helpers/
     replay.ts
     live.ts
@@ -398,8 +401,17 @@ await surrenderAndClosePage(page);
 | `select-yesno.spec.ts`        | 可选诱发效果 yes/no 弹窗                 | `select-yesno-sangan.ydk`             |
 | `announce-card.spec.ts`       | 卡名宣言搜索和选择                       | `announce-card.ydk`                   |
 | `announce-number.spec.ts`     | 数字宣言弹窗，选择两个数字               | `announce-number-sixth-sense.ydk`     |
+| `update-data-shuffle-hand.spec.ts` | 真实 `Duel.ShuffleHand` 后手牌 DOM 保持一致 | `update-data-shuffle-hand.ydk` |
+| `update-data-equip-stats.spec.ts` | 装备卡结算后 ATK/DEF 刷新，包括上升和下降 | `update-data-equip-stats.ydk` |
+| `update-counter.spec.ts` | 指示器增加后卡片详情展示正确数量 | `update-counter-war-rock-ordeal.ydk` |
 
 链接、超量、同调这三类额外卡组召唤 case 使用固定小卡组，并都会继续完成召唤，从实际落场 DOM 读取 sequence 做后续断言。链接素材选择是场上卡牌 `data-card-selectable="true"` 的直接选择；超量额外断言 overlay material DOM 数量；同调会按 server 提示分两段选择调整怪兽和非调整怪兽，避免误命中额外卡组候选弹窗。
+
+`update_data` 相关 live case 按触发机制拆分，而不是混在一个大对局里：
+
+- `shuffle hand`：使用会执行 `Duel.ShuffleHand` 的魔法 cost，断言展示的 cost 卡仍在手牌、发动卡和目标怪兽进入墓地，且双方 LP 按效果下降。
+- 装备数值：使用装备魔法分别覆盖 ATK/DEF 上升与 DEF 下降，断言卡片详情面板里的最终数值。
+- 指示器：使用能在发动时直接增加指示器的连续魔法，断言卡片详情面板里的 counter type 和 count。
 
 为了支持这类断言，Duel DOM 暴露以下 live 交互测试属性：
 
@@ -418,6 +430,9 @@ await surrenderAndClosePage(page);
 - `data-testid="duel-position-modal"` / `duel-position-option`：表示形式弹窗和选项项。
 - `data-testid="duel-yesno-yes"` / `duel-yesno-no`：yes/no 弹窗按钮。
 - `data-testid="duel-announce-*"`：卡名宣言弹窗、搜索框、搜索按钮、结果项和确认按钮。
+- `data-testid="duel-card-detail"`：卡片详情面板，包含 `data-card-code`。
+- `data-testid="duel-card-stat"`：详情面板里的 ATK/DEF 行，包含 `data-stat` 和 `data-stat-value`。
+- `data-testid="duel-card-counter"`：详情面板里的指示器行，包含 `data-counter-type` 和 `data-counter-count`。
 
 ### Live 测试卡组组织
 

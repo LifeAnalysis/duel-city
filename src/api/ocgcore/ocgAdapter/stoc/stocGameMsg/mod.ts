@@ -248,7 +248,10 @@ export default class GameMsgAdapter implements StocAdapter {
         }
         case GAME_MSG.MSG_CONFIRM_CARDS:
         case GAME_MSG.MSG_CONFIRM_DECKTOP: {
-          gameMsg.confirm_cards = MsgConfirmCardsAdapter(gameData);
+          gameMsg.confirm_cards = MsgConfirmCardsAdapter(
+            gameData,
+            func === GAME_MSG.MSG_CONFIRM_DECKTOP,
+          );
           break;
         }
         default: {

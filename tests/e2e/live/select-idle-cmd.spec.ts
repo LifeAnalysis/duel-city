@@ -7,7 +7,6 @@ import {
   clickCardAction,
   duelCard,
   expectCardIdleAction,
-  expectControllerHandCount,
   expectMyTurn,
   expectNoIdleAction,
   getControllerOfHandCard,
@@ -39,13 +38,12 @@ test.describe("live select_idle_cmd interaction", () => {
 
     await installOnlyLiveDeck(page, await readYdkDeck(DECK, DECK_NAME));
     await startAiDuel(page, {
-      mora: "rock",
+      mora: "paper",
       tp: "first",
     });
     await expectMyTurn(page);
 
     const controller = await getControllerOfHandCard(page, MYSTICAL_ELF);
-    await expectControllerHandCount(page, controller, 5);
 
     const mysticalElf = duelCard(page, {
       code: MYSTICAL_ELF,

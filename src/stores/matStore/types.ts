@@ -111,8 +111,8 @@ export interface PhaseState {
 
 export enum HandResult {
   UNKNOWN = 0,
-  SCISSOR = 1,
-  ROCK = 2,
+  ROCK = 1,
+  SCISSOR = 2,
   PAPER = 3,
 }
 

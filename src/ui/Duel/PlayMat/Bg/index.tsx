@@ -275,9 +275,16 @@ const onBlockClick = (
   placeInteractivity: PlaceInteractivity,
 ) => {
   if (placeInteractivity) {
-    sendSelectPlaceResponse(container.conn, placeInteractivity.response);
-    cardStore.inner.forEach((card) => (card.idleInteractivities = []));
-    placeStore.clearAllInteractivity();
+    placeStore.pushPlaceResponse(placeInteractivity.response);
+    if (
+      placeStore.selectPlaceResponses.length >=
+      placeStore.selectPlaceRequiredCount
+    ) {
+      sendSelectPlaceResponse(container.conn, placeStore.selectPlaceResponses);
+      cardStore.inner.forEach((card) => (card.idleInteractivities = []));
+      placeStore.clearAllInteractivity();
+      placeStore.startPlaceSelection(1);
+    }
   }
 };
 

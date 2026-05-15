@@ -16,12 +16,9 @@ export default (data: Uint8Array) => {
   const attacker_location = reader.readCardLocation();
   const target_location = reader.readCardLocation();
 
-  if (
-    target_location.controller === 0 &&
-    target_location.zone === 0 &&
-    target_location.sequence === 0
-  ) {
-    // 全零表示直接攻击玩家
+  if (target_location.zone === ygopro.CardZone.EMPTY) {
+    // ygopro 上游用 defender location == 0 表示直接攻击玩家。
+    // Neos 会把 raw location 0 映射成 CardZone.EMPTY；defender controller 仍可能是被攻击玩家。
     return new MsgAttack({
       attacker_location,
       direct_attack: true,
