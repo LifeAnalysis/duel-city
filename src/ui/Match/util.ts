@@ -2,10 +2,7 @@ import { initStrings, initSuperPrerelease } from "@/api";
 import { getUIContainer, initUIContainer } from "@/container/compat";
 import { WebSocketStream } from "@/infra";
 import { initReplaySocket, initSocket } from "@/middleware/socket";
-import {
-  pollSocketLooper,
-  pollSocketLooperWithAgent,
-} from "@/service/executor";
+import { pollSocketLooper } from "@/service/executor";
 
 import { initSqlite } from "../Layout/utils";
 
@@ -14,7 +11,6 @@ export const connectSrvpro = async (params: {
   ip: string;
   player: string;
   passWd: string;
-  enableKuriboh?: boolean;
   replay?: boolean;
   replayData?: ArrayBuffer;
   customOnConnected?: (conn: WebSocketStream) => void;
@@ -48,12 +44,6 @@ export const connectSrvpro = async (params: {
 
     // execute the event looper
 
-    if (params.enableKuriboh) {
-      const container = getUIContainer();
-      container.setEnableKuriboh(true);
-      pollSocketLooperWithAgent(container);
-    } else {
-      pollSocketLooper(getUIContainer());
-    }
+    pollSocketLooper(getUIContainer());
   }
 };

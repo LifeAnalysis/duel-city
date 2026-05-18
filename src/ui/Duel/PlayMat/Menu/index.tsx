@@ -6,8 +6,6 @@ import {
   MessageFilled,
   PauseCircleFilled,
   PlayCircleFilled,
-  RobotFilled,
-  RobotOutlined,
   StepForwardFilled,
 } from "@ant-design/icons";
 import {
@@ -282,10 +280,6 @@ export const Menu = () => {
     [],
   );
 
-  const [enableKuriboh, setEnableKuriboh] = useState(
-    container.getEnableKuriboh(),
-  );
-
   useEffect(() => {
     const endResponse = [
       PhaseType.BATTLE_START,
@@ -380,12 +374,6 @@ export const Menu = () => {
 
   const globalDisable = !matStore.isMe(currentPlayer);
 
-  const switchAutoSelect = () => {
-    const newValue = !enableKuriboh;
-    setEnableKuriboh(newValue);
-    container.setEnableKuriboh(newValue);
-  };
-
   return (
     <div className={styles["menu-container"]}>
       <SelectManager />
@@ -423,13 +411,6 @@ export const Menu = () => {
           onClick={displayActionHistory}
           type="text"
         />
-      </Tooltip>
-      <Tooltip title="AI">
-        <Button
-          icon={enableKuriboh ? <RobotFilled /> : <RobotOutlined />}
-          onClick={switchAutoSelect}
-          type="text"
-        ></Button>
       </Tooltip>
       <Tooltip title={i18n("ChatRoom")}>
         <Button

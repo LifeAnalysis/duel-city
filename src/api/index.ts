@@ -7,7 +7,6 @@ export * from "./ocgcore/idl/ocgcore";
 export * from "./ocgcore/ocgHelper";
 export * from "./strings";
 export * from "./superPreRelease";
-export * from "./ygoAgent";
 
 export async function handleHttps<T>(
   resp: Response,
