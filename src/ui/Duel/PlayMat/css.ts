@@ -1,13 +1,6 @@
 // 此文件目的是在js和CSS之间共享一些变量，并且这些变量是0运行时的。
 type CSSConfig = [string, [number, UNIT]][];
 
-// 以1280长度的viewpoint为基准进行缩放
-const VIEW_POINT_WIDTH_BASE_IPAD = 1280;
-const VIEW_POINT_WIDTH_BASE_MOBILE = 1000;
-
-const ZOOM_RATE_IPAD = 0.7;
-const ZOOM_RATE_MOBILE = 0.5;
-
 /** 转为CSS变量: BOARD_ROTATE_Z -> --board-rotate-z */
 const toCssProperties = (config: CSSConfig) =>
   config
@@ -22,19 +15,6 @@ const toCssProperties = (config: CSSConfig) =>
         ] as [string, string],
     )
     .reduce((acc, cur) => [...acc, cur], [] as [string, string][]);
-
-const pxTransform = (value: number, unit: UNIT) => {
-  if (unit === UNIT.PX && window.innerWidth < VIEW_POINT_WIDTH_BASE_MOBILE) {
-    return [value * ZOOM_RATE_MOBILE, unit];
-  } else if (
-    unit === UNIT.PX &&
-    window.innerWidth < VIEW_POINT_WIDTH_BASE_IPAD
-  ) {
-    return [value * ZOOM_RATE_IPAD, unit];
-  } else {
-    return [value, unit];
-  }
-};
 
 enum UNIT {
   PX = "px",
@@ -63,8 +43,8 @@ const _matConfigWithUnit: Record<string, [number, UNIT]> = {
   BLOCK_OUTSIDE_OFFSET_X: [15, UNIT.PX],
 };
 
-const matConfigWithUnit = Object.entries(_matConfigWithUnit).map(
-  ([k, [value, unit]]) => [k, pxTransform(value, unit) as [number, UNIT]],
+const matConfigWithUnit = Object.entries(
+  _matConfigWithUnit,
 ) satisfies CSSConfig;
 
 export function setCssProperties() {

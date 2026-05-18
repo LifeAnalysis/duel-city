@@ -26,6 +26,7 @@ import {
   removeCookie,
 } from "@/api";
 import { useConfig } from "@/config";
+import { useAdaptiveViewportScale } from "@/hook";
 import { accountStore } from "@/stores";
 
 import { updateMdproDeck } from "../BuildDeck/DeckDatabase/DeckResults";
@@ -43,6 +44,8 @@ import {
 } from "./utils";
 
 const NeosConfig = useConfig();
+const DEFAULT_VIEWPORT_SCALE = { designWidth: 1000, designHeight: 620 };
+const DUEL_VIEWPORT_SCALE = { designWidth: 1000, designHeight: 920 };
 
 export const loader: LoaderFunction = async () => {
   getLoginStatus();
@@ -87,6 +90,9 @@ export const Component = () => {
   const logined = Boolean(useSnapshot(accountStore).user);
 
   const { pathname } = routerLocation;
+  useAdaptiveViewportScale(
+    pathname === "/duel" ? DUEL_VIEWPORT_SCALE : DEFAULT_VIEWPORT_SCALE,
+  );
   const pathnamesHideHeader = ["/waitroom", "/duel", "/side"];
   const { modal } = App.useApp();
   const callbackUrl = `${location.origin}/match/`;

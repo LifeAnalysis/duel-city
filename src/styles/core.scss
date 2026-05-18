@@ -4,6 +4,12 @@
 /* 默认字体大小，适用于PC端 */
 html {
   font-size: 16px;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  --neos-adaptive-scale: 1;
+  --neos-adaptive-width: 100vw;
+  --neos-adaptive-height: 100vh;
 }
 
 /* 在移动端上设置不同的字体大小 */
@@ -24,9 +30,10 @@ body {
   color-scheme: dark;
   color: rgba(255, 255, 255, 0.87);
   background: #0f131e;
-  display: flex;
+  display: block;
   margin: 0;
-  min-width: 20rem;
+  min-width: 0;
+  overflow: hidden;
   position: fixed;
   top: 0;
   bottom: 0;
@@ -37,9 +44,15 @@ body {
   --nato-serif-font: "Noto Serif SC", serif;
   --header-height: 3.5rem;
   #root {
-    height: 100%;
-    margin: 0 auto;
-    width: 100%;
+    position: fixed;
+    left: 50%;
+    top: 50%;
+    width: var(--neos-adaptive-width);
+    height: var(--neos-adaptive-height);
+    margin: 0;
+    transform: translate(-50%, -50%) scale(var(--neos-adaptive-scale));
+    transform-origin: center center;
+    will-change: transform;
   }
 }
 
@@ -51,4 +64,41 @@ img {
 
 * {
   box-sizing: border-box;
+}
+
+.duel-mat {
+  position: absolute;
+  width: 100%;
+  left: 0;
+  top: 0;
+  height: 100%;
+}
+
+.duel-mat-camera {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  perspective: var(--perspective);
+}
+
+.duel-mat-camera,
+.duel-mat-camera * {
+  transform-style: preserve-3d;
+}
+
+.duel-mat-plane {
+  transform: translateX(0) translateY(0) translateZ(0)
+    rotateX(var(--plane-rotate-x));
+  width: fit-content;
+}
+
+.duel-mat-card-container {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
