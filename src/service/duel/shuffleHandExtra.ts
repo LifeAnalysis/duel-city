@@ -1,9 +1,24 @@
-import { ygopro } from "@/api";
+import { type CardMeta, fetchCard, ygopro } from "@/api";
 import { Container } from "@/container";
 import { AudioActionType, playEffect } from "@/infra/audio";
+import { CardType } from "@/stores";
 import { callCardMove } from "@/ui/Duel/PlayMat/Card";
 
 type MsgShuffleHandExtra = ygopro.StocGameMessage.MsgShuffleHandExtra;
+const { EXTRA } = ygopro.CardZone;
+const { FACEUP, FACEUP_ATTACK, FACEUP_DEFENSE } = ygopro.CardPosition;
+
+const emptyMeta = (): CardMeta => ({ id: 0, data: {}, text: {} });
+
+const setCardCode = (card: CardType, code: number) => {
+  if (card.code === code && (code === 0 || card.meta.id !== 0)) return;
+
+  card.code = code;
+  card.meta = code > 0 ? fetchCard(code) : emptyMeta();
+};
+
+const isFaceup = (card: CardType) =>
+  [FACEUP, FACEUP_ATTACK, FACEUP_DEFENSE].includes(card.location.position);
 
 export default async (
   container: Container,
@@ -13,36 +28,25 @@ export default async (
   playEffect(AudioActionType.SOUND_SHUFFLE);
   const { cards: codes, player: controller, zone } = shuffleHandExtra;
 
-  // 本质上是要将手卡/额外卡组的sequence变成和codes一样的顺序
-  const cards = context.cardStore.at(zone, controller);
-  const hash = new Map(codes.map((code) => [code, new Array()]));
-  codes.forEach((code, sequence) => {
-    hash.get(code)?.push(sequence);
-  });
+  const cards = context.cardStore
+    .at(zone, controller)
+    .slice()
+    .sort((a, b) => a.location.sequence - b.location.sequence);
+  const targetCards =
+    zone === EXTRA ? cards.filter((card) => !isFaceup(card)) : cards;
 
-  Promise.all(
-    cards.map(async (card) => {
-      const sequences = hash.get(card.code);
-      if (sequences !== undefined) {
-        const sequence = sequences.pop();
-        if (sequence !== undefined) {
-          card.location.sequence = sequence;
-          hash.set(card.code, sequences);
-
-          // 触发动画
-          await callCardMove(card.uuid);
-        } else {
-          console.warn(
-            `<ShuffleHandExtra>sequence poped is none, controller=${controller}, code=${card.code}, sequence=${sequence}`,
-          );
-        }
-      } else {
+  await Promise.all(
+    targetCards.map(async (card, index) => {
+      const code = codes[index];
+      if (code === undefined) {
         console.warn(
-          `<ShuffleHandExtra>target from records is null, controller=${controller}, cards=${cards.map(
-            (card) => card.code,
-          )}, codes=${codes}`,
+          `<ShuffleHandExtra>missing code, controller=${controller}, zone=${zone}, sequence=${card.location.sequence}, codes=${codes}`,
         );
+        return;
       }
+
+      setCardCode(card, code);
+      await callCardMove(card.uuid);
     }),
   );
 };
