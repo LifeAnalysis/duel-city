@@ -33,12 +33,13 @@ export default (data: Uint8Array) => {
       const pos = reader.inner.offset();
       const action = readUpdateAction(reader);
       if (action) {
-        if (action.location === undefined && zone !== undefined) {
-          action.location = new ygopro.CardLocation({
-            controller: player,
-            zone,
-            sequence,
-          });
+        if (zone !== undefined) {
+          if (action.location === undefined) {
+            action.location = new ygopro.CardLocation({});
+          }
+          action.location.controller = player;
+          action.location.zone = zone;
+          action.location.sequence = sequence;
         }
         msg.actions.push(action);
       }
