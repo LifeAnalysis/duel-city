@@ -34,6 +34,9 @@
   }
   .life {
     font-size: 1.8rem;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+    min-height: 1em;
   }
 }
 .timer-container {

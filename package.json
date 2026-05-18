@@ -24,7 +24,6 @@
     "overlayscrollbars-react": "^0.5.1",
     "rdndmb-html5-to-touch": "^8.0.3",
     "react": "^18.2.0",
-    "react-animated-numbers": "^0.16.0",
     "react-dnd": "^16.0.1",
     "react-dnd-multi-backend": "^8.0.3",
     "react-dom": "^18.2.0",

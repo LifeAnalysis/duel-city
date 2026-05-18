@@ -9,11 +9,11 @@ import styles from "./index.module.scss";
 // 后面再改名
 export const Mat: React.FC = () => {
   return (
-    <section className={styles.mat}>
-      <div className={styles.camera}>
-        <div className={styles.plane}>
+    <section className={`${styles.mat} duel-mat`}>
+      <div className={`${styles.camera} duel-mat-camera`}>
+        <div className={`${styles.plane} duel-mat-plane`}>
           <Bg />
-          <div className={styles.container}>
+          <div className={`${styles.container} duel-mat-card-container`}>
             <Cards />
           </div>
         </div>

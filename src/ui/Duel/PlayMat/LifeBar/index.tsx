@@ -1,17 +1,14 @@
 import { Progress } from "antd";
 import classNames from "classnames";
 import React, { useEffect, useState } from "react";
-import AnimatedNumbers from "react-animated-numbers";
 import { useSnapshot } from "valtio";
 
 import { useEnv } from "@/hook";
 import { matStore, roomStore } from "@/stores";
 
 import styles from "./index.module.scss";
-// 三个候选方案
-// https://snack.expo.dev/?platform=web
-// https://github.com/heyman333/react-animated-numbers
-// https://www.npmjs.com/package/react-countup?activeTab=dependents
+
+const LIFE_ANIMATION_DURATION = 500;
 
 export const LifeBar: React.FC = () => {
   const snapInitInfo = useSnapshot(matStore.initInfo);
@@ -40,10 +37,12 @@ export const LifeBar: React.FC = () => {
   }, [snapTimeLimit.op]);
 
   useEffect(() => {
-    setInterval(() => {
+    const interval = setInterval(() => {
       setMyTimeLimit((time) => time - 1);
       setOpTimeLimit((time) => time - 1);
     }, 1000);
+
+    return () => clearInterval(interval);
   }, []);
 
   useEffect(() => {
@@ -82,6 +81,7 @@ const LifeBarItem: React.FC<{
   timeLimit: number;
   isMe: boolean;
 }> = ({ active, name, life, timeLimit, isMe }) => {
+  const animatedLife = useAnimatedLifeNumber(life);
   const mm = Math.floor(timeLimit / 60);
   const ss = timeLimit % 60;
   const timeText =
@@ -107,8 +107,13 @@ const LifeBarItem: React.FC<{
         })}
       >
         <div className={styles.name}>{name}</div>
-        <div className={styles.life}>
-          {<AnimatedNumbers animateToNumber={life} />}
+        <div
+          className={styles.life}
+          data-testid="duel-player-life-value"
+          data-player={isMe ? "me" : "op"}
+          data-target-life={life}
+        >
+          {animatedLife}
         </div>
       </div>
       {active && (
@@ -124,4 +129,37 @@ const LifeBarItem: React.FC<{
       )}
     </div>
   );
+};
+
+const useAnimatedLifeNumber = (life: number) => {
+  const [displayLife, setDisplayLife] = useState(life);
+  const displayLifeRef = React.useRef(life);
+
+  useEffect(() => {
+    const from = displayLifeRef.current;
+    const to = life;
+
+    if (from === to) return;
+
+    let frame = 0;
+    const start = performance.now();
+    const animate = (now: number) => {
+      const progress = Math.min(1, (now - start) / LIFE_ANIMATION_DURATION);
+      const easedProgress = 1 - Math.pow(1 - progress, 3);
+      const next = Math.round(from + (to - from) * easedProgress);
+
+      displayLifeRef.current = next;
+      setDisplayLife(next);
+
+      if (progress < 1) {
+        frame = requestAnimationFrame(animate);
+      }
+    };
+
+    frame = requestAnimationFrame(animate);
+
+    return () => cancelAnimationFrame(frame);
+  }, [life]);
+
+  return displayLife;
 };
