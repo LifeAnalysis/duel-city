@@ -1,4 +1,4 @@
-import { App, Button, Input, Modal, Switch } from "antd";
+import { App, Button, Input, Modal } from "antd";
 import React, { ChangeEvent, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
@@ -46,7 +46,6 @@ export const MatchModal: React.FC = ({}) => {
   const [confirmLoading, setConfirmLoading] = useState(false);
   const navigate = useNavigate();
   const { t: i18n } = useTranslation("MatchModal");
-  const [enableKuriboh, setEnableKuriBoh] = useState(false);
 
   const handlePlayerChange = (event: ChangeEvent<HTMLInputElement>) => {
     setPlayer(event.target.value);
@@ -74,7 +73,6 @@ export const MatchModal: React.FC = ({}) => {
       player,
       ip: genServerAddress(serverId),
       passWd: passwd,
-      enableKuriboh,
       customOnConnected: serverId === ENV_408 ? send408Hint : undefined,
     });
   };
@@ -140,14 +138,6 @@ export const MatchModal: React.FC = ({}) => {
           ]}
           onChange={handleServerChange}
         />
-        <div className={styles["ai-assist-container"]}>
-          <span>{i18n("EnableAIAssist")}</span>
-          <span style={{ color: "red" }}>{`(${i18n("BetaTest")}!!)`}</span>
-          <Switch
-            value={enableKuriboh}
-            onChange={(value) => setEnableKuriBoh(value)}
-          />
-        </div>
         <Input
           className={styles.input}
           data-testid="match-modal-player"

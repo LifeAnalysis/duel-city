@@ -50,7 +50,6 @@
   "entertainWatchUrl": "wss://tiramisu.moecube.com:7923",
   "userApi": "https://sapi.moecube.com:444/accounts/users/{username}.json",
   "mdproServer": "https://zgai.tech:38443",
-  "agentServer": "https://sapi.moecube.com:444/neos-ai-agent",
   "startDelay": 1000,
   "ui": {
     "hint": {

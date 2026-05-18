@@ -169,9 +169,7 @@
     "408": "408环境",
     "PlayerNickname": "玩家昵称",
     "RoomPasswordOptional": "房间密码(可选)",
-    "JoinRoom": "加入房间",
-    "EnableAIAssist": "启用AI辅助功能",
-    "BetaTest": "Beta测试"
+    "JoinRoom": "加入房间"
   },
   "ReplayModal": {
     "SelectReplay": "选择回放",
@@ -207,9 +205,6 @@
     "LanguageSettings": "语言",
     "AnimationSettings": "动画",
     "AnimationSpeed": "动画速度",
-    "AISettings": "AI设置",
-    "CustomAIServer": "输入自定义AI模型服务器URL",
-    "ApplyAISettings": "应用",
     "RecoverDefault": "恢复默认设置"
   },
   "DeckResults": {

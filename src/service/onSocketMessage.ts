@@ -7,7 +7,6 @@ import { YgoProPacket } from "@/api/ocgcore/ocgAdapter/packet";
 import { Container } from "@/container";
 import { replayStore } from "@/stores";
 
-import { YgoAgent } from "./duel/agent";
 import handleGameMsg from "./duel/gameMsg";
 import handleTimeLimit from "./duel/timeLimit";
 import handleDeckCount from "./mora/deckCount";
@@ -37,19 +36,14 @@ let animation: Promise<void> = Promise.resolve();
 export default async function handleSocketMessage(
   container: Container,
   e: MessageEvent,
-  agent?: YgoAgent,
 ) {
   // 确保按序执行
-  animation = animation.then(() => _handle(container, e, agent));
+  animation = animation.then(() => _handle(container, e));
   await animation;
 }
 
 // FIXME: 下面的所有`handler`中访问`Store`的时候都应该通过`Container`进行访问
-async function _handle(
-  container: Container,
-  e: MessageEvent,
-  agent?: YgoAgent,
-) {
+async function _handle(container: Container, e: MessageEvent) {
   const packets = YgoProPacket.deserialize(e.data);
 
   for (const packet of packets) {
@@ -117,7 +111,7 @@ async function _handle(
           // 如果不是回放模式，则记录回放数据
           replayStore.record(packet);
         }
-        await handleGameMsg(container, pb, agent);
+        await handleGameMsg(container, pb);
 
         break;
       }

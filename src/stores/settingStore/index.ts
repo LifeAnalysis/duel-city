@@ -3,7 +3,6 @@ import { pick } from "lodash-es";
 import { proxy, subscribe } from "valtio";
 
 import { type NeosStore } from "../shared";
-import { AIConfig, defaultAIConfig } from "./ai";
 import { AnimationConfig, defaultAnimationConfig } from "./animation";
 import { AudioConfig, defaultAudioConfig } from "./audio";
 
@@ -11,13 +10,12 @@ import { AudioConfig, defaultAudioConfig } from "./audio";
 const NEO_SETTING_CONFIG = "__neo_setting_config__";
 
 /** 设置项 */
-type SettingStoreConfig = Pick<SettingStore, "audio" | "animation" | "ai">;
+type SettingStoreConfig = Pick<SettingStore, "audio" | "animation">;
 
 /** 默认设置 */
 const defaultSettingConfig: SettingStoreConfig = {
   audio: defaultAudioConfig,
   animation: defaultAnimationConfig,
-  ai: defaultAIConfig,
 };
 
 /** 获取默认设置 */
@@ -30,7 +28,6 @@ function getDefaultSetting() {
       if (config.audio === undefined) config.audio = defaultAudioConfig;
       if (config.animation === undefined)
         config.animation = defaultAnimationConfig;
-      if (config.ai === undefined) config.ai = defaultAIConfig;
       return config;
     }
   }
@@ -47,9 +44,6 @@ class SettingStore implements NeosStore {
   /** Animation Configuration */
   animation: AnimationConfig = defaultSetting.animation;
 
-  /** AI Configuration */
-  ai: AIConfig = defaultSetting.ai;
-
   /** 保存音频设置 */
   saveAudioConfig(config: Partial<AudioConfig>): void {
     Object.assign(this.audio, config);
@@ -58,11 +52,6 @@ class SettingStore implements NeosStore {
   /** save Animation Configuration */
   saveAnimationConfig(config: Partial<AnimationConfig>): void {
     Object.assign(this.animation, config);
-  }
-
-  /** save AI Configuration */
-  saveAIConfig(config: Partial<AIConfig>): void {
-    Object.assign(this.ai, config);
   }
 
   reset(): void {
@@ -80,7 +69,7 @@ subscribe(settingStore, () => {
   if (!isSSR()) {
     localStorage.setItem(
       NEO_SETTING_CONFIG,
-      JSON.stringify(pick(settingStore, ["audio", "animation", "ai"])),
+      JSON.stringify(pick(settingStore, ["audio", "animation"])),
     );
   }
 });

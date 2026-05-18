@@ -3,7 +3,6 @@ import { Container } from "@/container";
 import { replayStore } from "@/stores";
 import { showWaiting } from "@/ui/Duel/Message";
 
-import { YgoAgent } from "./agent";
 import onAnnounce from "./announce";
 import onMsgAttack from "./attack";
 import onMsgAttackDisable from "./attackDisable";
@@ -81,7 +80,6 @@ const ActiveList = [
 export default async function handleGameMsg(
   container: Container,
   pb: ygopro.YgoStocMsg,
-  agent?: YgoAgent,
 ): Promise<void> {
   const msg = pb.stoc_game_msg;
 
@@ -89,32 +87,11 @@ export default async function handleGameMsg(
     showWaiting(false);
 
     if (replayStore.isReplay) return;
-
-    if (agent && !agent.getDisable()) {
-      console.info(`Handling msg: ${msg.gameMsg} with YgoAgent`);
-      const enableKuriboh = container.getEnableKuriboh();
-
-      try {
-        await agent.sendAIPredictAsResponse(container.conn, msg, enableKuriboh);
-        if (enableKuriboh) return;
-      } catch (e) {
-        console.error(`Erros occurs when handling msg ${msg.gameMsg}: ${e}`);
-        container.setEnableKuriboh(false);
-        // TODO: I18N
-        container.context.matStore.error = `AI模型监测到场上存在它没见过的卡片，
-        因此需要关掉AI辅助功能。\n
-        请耐心等待开发团队对模型进行优化，感谢！`;
-        agent.setDisable(true);
-      }
-    }
   }
 
   switch (msg.gameMsg) {
     case "start": {
       await onMsgStart(container, msg.start);
-
-      // We should init agent when the MSG_START reached.
-      if (agent) await agent.init();
 
       break;
     }
