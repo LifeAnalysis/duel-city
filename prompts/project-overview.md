@@ -83,3 +83,7 @@ src/
 - [GitLab 仓库](https://code.mycard.moe/mycard/Neos)
 - [项目文档](https://doc.neos.moe)
 - [萌卡社区](https://mycard.moe/)
+
+## 相关设计文档
+
+- [LLM Duel Agent 方案](./llm-duel-agent.md): 通过 Playwright 操作 Neos UI 的外部大模型对战 Agent 方案。

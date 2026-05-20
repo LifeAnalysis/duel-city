@@ -1,11 +1,7 @@
 {
   "compilerOptions": {
     "target": "es6",
-    "lib": [
-      "dom",
-      "dom.iterable",
-      "esnext"
-    ],
+    "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": true,
     "skipLibCheck": true,
     "esModuleInterop": true,
@@ -19,20 +15,12 @@
     "isolatedModules": true,
     "noEmit": true,
     "jsx": "preserve",
-    "types": [
-      "vite/client"
-    ],
+    "allowImportingTsExtensions": true,
+    "types": ["vite/client", "node"],
     "paths": {
-      "@/*": [
-        "./src/*"
-      ],
-      "neos-assets/*": [
-        "./neos-assets/*"
-      ]
+      "@/*": ["./src/*"],
+      "neos-assets/*": ["./neos-assets/*"]
     }
   },
-  "include": [
-    "src",
-    "neos-assets"
-  ]
+  "include": ["src", "neos-assets", "agent"]
 }
