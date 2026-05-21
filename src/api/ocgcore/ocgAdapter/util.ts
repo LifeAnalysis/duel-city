@@ -303,6 +303,10 @@ export function readUpdateAction(
   const mask = -1;
   let code = mask;
   let location = undefined;
+  // updateData/updateCard may synthesize CardLocation only for sequence lookup.
+  // Keep whether QUERY_POSITION was actually present; protobuf defaults position
+  // to FACEUP_ATTACK on an otherwise empty CardLocation.
+  const updatesPosition = (flag & QUERY_POSITION) !== 0;
   let alias = mask;
   let type_ = mask;
   let level = mask;
@@ -406,7 +410,7 @@ export function readUpdateAction(
     link = reader.inner.readInt32();
   }
 
-  return new MsgUpdateData.Action({
+  const action = new MsgUpdateData.Action({
     code,
     location,
     alias,
@@ -431,4 +435,9 @@ export function readUpdateAction(
     rscale,
     link,
   });
+  (
+    action as MsgUpdateData.Action & { updatesPosition?: boolean }
+  ).updatesPosition = updatesPosition;
+
+  return action;
 }

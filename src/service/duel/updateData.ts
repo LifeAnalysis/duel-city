@@ -4,16 +4,10 @@ import { callCardMove } from "@/ui/Duel/PlayMat/Card";
 import MsgUpdateData = ygopro.StocGameMessage.MsgUpdateData;
 import { TYPE_TOKEN } from "@/common";
 import { Container } from "@/container";
-import { CardType } from "@/stores";
 
-const clearCardData = (card: CardType) => {
-  card.code = 0;
-  card.meta = { id: 0, data: {}, text: {} };
-  card.counters = {};
-  card.idleInteractivities = [];
-  card.isToken = false;
-  card.targeted = false;
-  card.status = 0;
+type UpdateAction = MsgUpdateData.Action & {
+  clear?: boolean;
+  updatesPosition?: boolean;
 };
 
 export default async (container: Container, updateData: MsgUpdateData) => {
@@ -27,14 +21,14 @@ export default async (container: Container, updateData: MsgUpdateData) => {
           .filter((card) => card.location.sequence === sequence)
           .at(0);
         if (target) {
-          if ((action as typeof action & { clear?: boolean }).clear) {
-            clearCardData(target);
+          const updateAction = action as UpdateAction;
+          if (updateAction.clear) {
             continue;
           }
 
-          if (action?.code === 0) {
-            clearCardData(target);
-          } else if (
+          // code=0 means the query did not expose identity; movement and
+          // position messages decide whether an existing visible card changes.
+          if (
             action?.code > 0 &&
             (target.code !== action.code || target.meta.id === 0)
           ) {
@@ -44,7 +38,7 @@ export default async (container: Container, updateData: MsgUpdateData) => {
           }
 
           const meta = target.meta;
-          if (action.location !== undefined) {
+          if (updateAction.updatesPosition && action.location !== undefined) {
             if (target.location.position !== action.location.position) {
               // Currently only update position
               target.location.position = action.location.position;
