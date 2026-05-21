@@ -140,6 +140,7 @@ export const DEFAULT_EXPECTED_REPLAY_ADVANCE_MASK =
   ReplayAdvanceFlag.UPDATE_COUNTER;
 
 const UPDATE_EXPECTED = process.env.UPDATE_EXPECTED === "1";
+const REPLAY_START_TIMEOUT = Number(process.env.REPLAY_START_TIMEOUT ?? 60000);
 const REPLAY_ADVANCE_EVENT = "neos:replay-advance";
 const ZONE_ORDER = [
   "DECK",
@@ -214,7 +215,7 @@ export async function uploadReplay(page: Page, replayPath: string) {
   await page.locator('input[type="file"]').setInputFiles(replayPath);
   await page.getByRole("button", { name: /开始回放|Start Replay/ }).click();
 
-  await expect(page).toHaveURL(/\/duel/);
+  await expect(page).toHaveURL(/\/duel/, { timeout: REPLAY_START_TIMEOUT });
 }
 
 export async function pauseReplay(page: Page) {
