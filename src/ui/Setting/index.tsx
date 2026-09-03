@@ -17,7 +17,7 @@ import { AudioSetting } from "./Audio";
 /** 设置面板属性 */
 export interface SettingProps {
   /** 默认设置页 */
-  defaultKey?: "audio" | "other";
+  defaultKey?: "audio" | "animation" | "language";
 }
 
 export const Setting = (props: SettingProps) => {

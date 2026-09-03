@@ -15,6 +15,14 @@
   @include utils.noise-bg;
 }
 
+:global(body.duel-diorama-enabled) .background {
+  background-color: rgba(1, 5, 20, 0.48);
+}
+
+:global(body.duel-diorama-enabled) .inner {
+  opacity: 0.42;
+}
+
 .inner {
   transform: translateY(50%);
   width: 60vw;

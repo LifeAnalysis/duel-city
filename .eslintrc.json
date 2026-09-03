@@ -1,21 +1,12 @@
 {
   "parser": "@typescript-eslint/parser",
-  "extends": [
-    "plugin:prettier/recommended",
-    "plugin:valtio/recommended"
-  ],
-  "plugins": [
-    "@typescript-eslint",
-    "simple-import-sort"
-  ],
+  "extends": ["plugin:prettier/recommended", "plugin:valtio/recommended"],
+  "plugins": ["@typescript-eslint", "simple-import-sort"],
   "rules": {
     "simple-import-sort/imports": "warn",
     "simple-import-sort/exports": "warn",
     "eqeqeq": "warn",
-    "@typescript-eslint/consistent-type-definitions": [
-      "error",
-      "interface"
-    ],
+    "@typescript-eslint/consistent-type-definitions": ["error", "interface"],
     "no-unused-vars": "off",
     "@typescript-eslint/no-unused-vars": [
       "error",
@@ -25,13 +16,32 @@
       }
     ]
   },
+  "overrides": [
+    {
+      "files": [
+        "src/duel3d/**/*.{ts,tsx}",
+        "src/world/**/*.{ts,tsx}",
+        "src/ui/Plaza/**/*.{ts,tsx}",
+        "src/ui/World/**/*.{ts,tsx}"
+      ],
+      "rules": {
+        "complexity": ["error", 12],
+        "max-lines": [
+          "error",
+          {
+            "max": 299,
+            "skipBlankLines": true,
+            "skipComments": true
+          }
+        ]
+      }
+    }
+  ],
   "settings": {
     "import/resolver": {
       "node": true,
       "typescript": true
     }
   },
-  "ignorePatterns": [
-    "src/api/ocgcore/idl/ocgcore.ts"
-  ]
+  "ignorePatterns": ["src/api/ocgcore/idl/ocgcore.ts"]
 }

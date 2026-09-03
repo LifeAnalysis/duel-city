@@ -1,4 +1,4 @@
-import { Form, Slider } from "antd";
+import { Form, Slider, Switch } from "antd";
 import React from "react";
 import { useTranslation } from "react-i18next";
 import { useSnapshot } from "valtio";
@@ -6,7 +6,7 @@ import { useSnapshot } from "valtio";
 import { settingStore } from "@/stores/settingStore";
 
 export const AnimationSetting: React.FC = () => {
-  const { animation } = useSnapshot(settingStore);
+  const { animation, diorama } = useSnapshot(settingStore);
   const { t: i18n } = useTranslation("SystemSettings");
 
   return (
@@ -27,6 +27,13 @@ export const AnimationSetting: React.FC = () => {
             }}
           />
         </Form.Item>
+      </Form.Item>
+      <Form.Item label="3D Diorama">
+        <Switch
+          aria-label="3D Diorama"
+          checked={diorama.enabled}
+          onChange={(enabled) => settingStore.saveDioramaConfig({ enabled })}
+        />
       </Form.Item>
     </Form>
   );

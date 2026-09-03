@@ -69,6 +69,27 @@ Neos is developed in [mycard](https://mycard.moe/) community, join the [QQ Chat]
 - Chunchi Che ([@SKTT1Ryze](https://github.com/SKTT1Ryze))
 - timelic [@timelic](https://github.com/timelic)
 
+## Duel City 3D layer
+
+Duel City adds an optional voxel diorama behind the existing Neos PlayMat. The DOM PlayMat, message components, duel engine, protocol adapter, socket middleware, and duel handlers remain authoritative. The Three.js mount is lazy, pointer-inert, independently disposable, and guarded by a React error boundary; disabling it or losing WebGL leaves the 2D duel path unchanged.
+
+Run `npm run dev`, then open `/world`. Use WASD to move, Shift to run, drag to orbit, E to use a nearby table control, and F3 to show FPS, WebGL calls, and triangle count. The amber lever cycles time through paused, 1×, and 4×; the cyan switch controls city lights; the red button launches the bundled code-authored YRP3D demo through the existing local replay socket. The demo contains only start, turn, phase, and life-point packets, with no card identities or external data dependency.
+
+The implementation is split into small modules under `src/duel3d`:
+
+- `art` owns the shared 20-color palette, voxel scale, three-step gradient, and toon materials.
+- `model` owns the `[x,y,z,colorIndex]` format, generic creature variants, and the global instanced batch. Each palette color gets at most one `InstancedMesh`.
+- `city` owns the fixed-seed grid, 30–50 buildings, stage, harbor, park, original card shop, monorail, authored traffic paths, and four-minute day/night controller.
+- `figure` owns the voxel duelist rig and hand-keyed idle, walk, run, and jump poses.
+- `duel` owns zone projection, passive store/event observation, slabs and creatures, particles, LP numerals, stage animation, postprocessing, and camera direction.
+- `render` owns the single combined outline, grain, and vignette post pass.
+- `replay` owns the original local demo packet sequence; `world` owns the physical table controls.
+- `src/world/WorldScene.ts` composes the walkable BVH/controller view. `src/ui/Duel/DioramaLayer` owns the failure boundary, React mount, Watch HUD, and full-screen layout.
+
+Interactive duels use one calibrated board camera so projected 3D zones stay aligned with the DOM zones. It never takes input and disables grain and vignette to protect card and prompt readability. Watch mode reuses the same mounted duel, replay stream, PlayMat, messages, adapter, and renderer; only layout, HUD, and camera behavior change. Moves use the board shot, attacks use a low over-shoulder shot with a short shake, and major summons use a push-in. All transitions use a 300 ms smoothstep. Prompt visibility holds the current shot and lowers only canvas exposure. Exiting Watch restores the normal duel at the same replay position.
+
+The layer targets fewer than 150 WebGL calls. The local demo smoke test is `tests/e2e/duel-diorama-replay.spec.ts`; it verifies the physical World control, local replay stream, Watch HUD, preserved PlayMat, render budget, and zero third-party requests.
+
 ## Lincese
                     GNU GENERAL PUBLIC LICENSE
                        Version 3, 29 June 2007

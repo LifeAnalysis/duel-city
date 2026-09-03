@@ -7,6 +7,7 @@ import { useEnv } from "@/hook";
 import { AudioActionType, changeScene } from "@/infra/audio";
 import { matStore, SideStage, sideStore } from "@/stores";
 
+import { DioramaLayer } from "./DioramaLayer";
 import {
   ActionHistory,
   Alert,
@@ -24,8 +25,10 @@ import {
   YesNoModal,
 } from "./Message";
 import { ChatBox, HandChain, LifeBar, Mat, Menu, Underlying } from "./PlayMat";
+import { setCssProperties } from "./PlayMat/css";
 
 export const loader: LoaderFunction = async () => {
+  setCssProperties();
   // 更新场景
   changeScene(AudioActionType.BGM_DUEL);
   return null;
@@ -68,6 +71,7 @@ export const Component: React.FC = () => {
 
   return (
     <>
+      <DioramaLayer />
       <Underlying />
       <SelectActionsModal />
       <Alert />

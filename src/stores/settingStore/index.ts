@@ -10,12 +10,21 @@ import { AudioConfig, defaultAudioConfig } from "./audio";
 const NEO_SETTING_CONFIG = "__neo_setting_config__";
 
 /** 设置项 */
-type SettingStoreConfig = Pick<SettingStore, "audio" | "animation">;
+interface DioramaConfig {
+  enabled: boolean;
+}
+
+interface SettingStoreConfig {
+  audio: AudioConfig;
+  animation: AnimationConfig;
+  diorama: DioramaConfig;
+}
 
 /** 默认设置 */
 const defaultSettingConfig: SettingStoreConfig = {
   audio: defaultAudioConfig,
   animation: defaultAnimationConfig,
+  diorama: { enabled: true },
 };
 
 /** 获取默认设置 */
@@ -28,6 +37,7 @@ function getDefaultSetting() {
       if (config.audio === undefined) config.audio = defaultAudioConfig;
       if (config.animation === undefined)
         config.animation = defaultAnimationConfig;
+      if (config.diorama === undefined) config.diorama = { enabled: true };
       return config;
     }
   }
@@ -44,6 +54,8 @@ class SettingStore implements NeosStore {
   /** Animation Configuration */
   animation: AnimationConfig = defaultSetting.animation;
 
+  diorama: DioramaConfig = defaultSetting.diorama;
+
   /** 保存音频设置 */
   saveAudioConfig(config: Partial<AudioConfig>): void {
     Object.assign(this.audio, config);
@@ -54,10 +66,15 @@ class SettingStore implements NeosStore {
     Object.assign(this.animation, config);
   }
 
+  saveDioramaConfig(config: Partial<SettingStoreConfig["diorama"]>): void {
+    Object.assign(this.diorama, config);
+  }
+
   reset(): void {
     const defaultSetting = getDefaultSetting();
     this.audio = defaultSetting.audio;
     this.animation = defaultSetting.animation;
+    this.diorama = defaultSetting.diorama;
   }
 }
 
@@ -69,7 +86,7 @@ subscribe(settingStore, () => {
   if (!isSSR()) {
     localStorage.setItem(
       NEO_SETTING_CONFIG,
-      JSON.stringify(pick(settingStore, ["audio", "animation"])),
+      JSON.stringify(pick(settingStore, ["audio", "animation", "diorama"])),
     );
   }
 });

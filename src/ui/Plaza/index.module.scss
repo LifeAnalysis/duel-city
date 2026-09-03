@@ -1,0 +1,222 @@
+.plaza {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  color: #edf7fb;
+  background: #07101e;
+  font-family: "Avenir Next", "Segoe UI", sans-serif;
+  letter-spacing: 0.06em;
+}
+
+.canvas {
+  position: absolute;
+  inset: 0;
+}
+
+.canvas canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+  cursor: grab;
+}
+
+.canvas canvas:active {
+  cursor: grabbing;
+}
+
+.brand,
+.identity,
+.offline,
+.objective,
+.controls {
+  position: absolute;
+  z-index: 2;
+}
+
+.brand {
+  top: 2.25rem;
+  left: 2.5rem;
+  display: grid;
+  gap: 0.22rem;
+}
+
+.brand strong {
+  font-size: clamp(1.65rem, 3vw, 3.1rem);
+  line-height: 0.88;
+  font-weight: 800;
+  letter-spacing: -0.055em;
+  text-shadow: 0 0 28px rgba(76, 233, 255, 0.22);
+}
+
+.kicker,
+.identity span,
+.objective small {
+  color: #7f9bad;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+}
+
+.identity {
+  top: 2.35rem;
+  right: 2.5rem;
+  display: grid;
+  justify-items: end;
+  gap: 0.38rem;
+}
+
+.identity strong {
+  width: 12rem;
+  border: 0;
+  border-bottom: 1px solid rgba(115, 227, 245, 0.45);
+  padding: 0.28rem 0;
+  color: #edf7fb;
+  background: transparent;
+  text-align: right;
+  font:
+    700 0.78rem/1 "Avenir Next",
+    "Segoe UI",
+    sans-serif;
+  letter-spacing: 0.12em;
+}
+
+.offline {
+  top: 6.45rem;
+  right: 2.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.48rem;
+  color: #ffb36b;
+  font-size: 0.58rem;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+}
+
+.offline span {
+  width: 0.42rem;
+  height: 0.42rem;
+  border: 1px solid #ff9b52;
+  border-radius: 50%;
+  box-shadow: 0 0 10px rgba(255, 139, 73, 0.65);
+}
+
+.objective {
+  left: 50%;
+  bottom: 4.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  min-width: 18rem;
+  padding: 0.72rem 1rem 0.72rem 0.75rem;
+  border: 1px solid rgba(107, 220, 241, 0.25);
+  background: linear-gradient(
+    105deg,
+    rgba(8, 18, 32, 0.88),
+    rgba(8, 18, 32, 0.45)
+  );
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.34);
+  transform: translateX(-50%);
+  backdrop-filter: blur(12px);
+  transition:
+    border-color 160ms ease,
+    transform 160ms ease;
+}
+
+.objective.active {
+  border-color: rgba(98, 235, 255, 0.76);
+  transform: translateX(-50%) translateY(-0.2rem);
+}
+
+.objective > span:last-child {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.objective strong {
+  font-size: 0.72rem;
+  letter-spacing: 0.11em;
+}
+
+.key {
+  display: grid;
+  place-items: center;
+  width: 2.45rem;
+  height: 2.45rem;
+  border: 1px solid #65e6f7;
+  color: #adf5ff;
+  background: rgba(55, 213, 236, 0.1);
+  font-size: 0.72rem;
+  font-weight: 900;
+  box-shadow: inset 0 0 18px rgba(61, 223, 244, 0.12);
+}
+
+.controls {
+  right: 2.5rem;
+  bottom: 2.35rem;
+  display: flex;
+  gap: 1rem;
+  color: #6e8595;
+  font-size: 0.54rem;
+  font-weight: 700;
+}
+
+.controls span {
+  display: flex;
+  align-items: center;
+  gap: 0.38rem;
+}
+
+.controls kbd {
+  color: #d7eaf0;
+  font: inherit;
+}
+
+.frameTop,
+.frameBottom {
+  position: absolute;
+  left: 2.5rem;
+  right: 2.5rem;
+  z-index: 1;
+  height: 1px;
+  pointer-events: none;
+  background: linear-gradient(
+    90deg,
+    rgba(93, 225, 244, 0.52),
+    transparent 32%,
+    transparent 68%,
+    rgba(93, 225, 244, 0.24)
+  );
+}
+
+.frameTop {
+  top: 1.25rem;
+}
+
+.frameBottom {
+  bottom: 1.25rem;
+}
+
+@media (max-width: 760px) {
+  .brand,
+  .frameTop,
+  .frameBottom {
+    left: 1.15rem;
+  }
+
+  .identity,
+  .offline,
+  .controls,
+  .frameTop,
+  .frameBottom {
+    right: 1.15rem;
+  }
+
+  .controls {
+    display: none;
+  }
+
+  .objective {
+    bottom: 2.4rem;
+    min-width: min(90vw, 18rem);
+  }
+}

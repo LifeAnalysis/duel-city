@@ -17,6 +17,11 @@ import { EventEmitter } from "eventemitter3";
 
 /* eslint no-var: 0 */
 declare global {
+  interface Window {
+    __DUEL_CITY_DIAGNOSTICS__?: Record<string, unknown>;
+    __DUEL_CITY_DUEL_3D__?: Record<string, unknown>;
+  }
+
   interface Console {
     color: (
       color: string,

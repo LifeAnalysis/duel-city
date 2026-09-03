@@ -1,13 +1,15 @@
 import { MinusOutlined, UpOutlined } from "@ant-design/icons";
 import { Modal, type ModalProps } from "antd";
 import classNames from "classnames";
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 
+import { setPresentationPrompt } from "@/duel3d/ui/presentationStore";
 import { sleep } from "@/infra";
 
 import styles from "./index.module.scss";
 
 export const NeosModal: React.FC<ModalProps> = (props) => {
+  const presentationId = useId();
   const [mini, setMini] = useState(false);
 
   // 为了修antd的bug，先让isOpen发生变化，同时设置visibility为`hidden`，再让它变回来
@@ -24,6 +26,10 @@ export const NeosModal: React.FC<ModalProps> = (props) => {
     close();
   }, []);
   useEffect(() => setRealOpen(!!props.open), [props.open]);
+  useEffect(() => {
+    setPresentationPrompt(presentationId, !!props.open);
+    return () => setPresentationPrompt(presentationId, false);
+  }, [presentationId, props.open]);
 
   return (
     <Modal

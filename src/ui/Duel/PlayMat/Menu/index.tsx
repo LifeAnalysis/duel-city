@@ -37,6 +37,7 @@ import {
 } from "@/stores";
 import { IconFont } from "@/ui/Shared";
 
+import { DioramaMenuControls } from "../../DioramaMenuControls";
 import styles from "./index.module.scss";
 import PhaseType = ygopro.StocGameMessage.MsgNewPhase.PhaseType;
 import { useTranslation } from "react-i18next";
@@ -378,6 +379,7 @@ export const Menu = () => {
     <div className={styles["menu-container"]}>
       <SelectManager />
       <ReplayControl />
+      <DioramaMenuControls />
       <DropdownWithTitle
         title={i18n("SelectPhase")}
         menu={{ items: phaseSwitchItems }}

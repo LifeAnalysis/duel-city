@@ -1,5 +1,4 @@
 @charset "utf-8";
-@import url("https://fonts.font.im/css2?family=Electrolize&family=Noto+Serif+SC:wght@700&display=swap");
 
 /* 默认字体大小，适用于PC端 */
 html {
@@ -40,8 +39,8 @@ body {
   left: 0;
   right: 0;
   font-family: var(--theme-font);
-  --theme-font: "Electrolize", sans-serif;
-  --nato-serif-font: "Noto Serif SC", serif;
+  --theme-font: "Avenir Next", "Segoe UI", sans-serif;
+  --nato-serif-font: Georgia, serif;
   --header-height: 3.5rem;
   #root {
     position: fixed;

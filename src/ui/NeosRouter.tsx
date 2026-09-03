@@ -1,15 +1,27 @@
-import { createBrowserRouter, RouterProvider } from "react-router-dom";
-
-import { Component, loader } from "./Layout";
+import {
+  createBrowserRouter,
+  Navigate,
+  RouterProvider,
+} from "react-router-dom";
 
 const router = createBrowserRouter([
   {
     path: "/",
-    Component,
-    loader,
+    element: <Navigate to="/world" replace />,
+  },
+  {
+    path: "/world",
+    lazy: () => import("./Plaza"),
+  },
+  {
+    path: "/world/replay",
+    lazy: () => import("./Duel/Main"),
+  },
+  {
+    lazy: () => import("./Layout"),
     children: [
       {
-        path: "/",
+        path: "/legacy-start",
         lazy: () => import("./Start"),
       },
       {
@@ -33,6 +45,10 @@ const router = createBrowserRouter([
         lazy: () => import("./Side"),
       },
     ],
+  },
+  {
+    path: "*",
+    element: <Navigate to="/world" replace />,
   },
 ]);
 
